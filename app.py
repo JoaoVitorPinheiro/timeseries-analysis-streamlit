@@ -73,7 +73,6 @@ def main():
         except:
             pass
   
-
         try:
             check_residuals(df,
                         time_col,

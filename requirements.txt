@@ -77,7 +77,7 @@ pytz==2021.3
 pytz-deprecation-shim==0.1.0.post0
 pyzmq==22.0.3
 requests==2.27.1
-scipy==1.8.0
+scipy==1.7.1
 seaborn==0.11.2
 Send2Trash==1.8.0
 six==1.16.0

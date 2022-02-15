@@ -8,7 +8,6 @@ astunparse==1.6.3
 attrs==21.4.0
 backcall==0.2.0
 base58==2.1.1
-baselines @ git+https://github.com/openai/baselines.git@ea25b9e8b234e6ee1bca43083f8f3cf974143998
 black==22.1.0
 bleach==4.1.0
 blinker==1.4

@@ -1,0 +1,77 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import statsmodels.api as sm
+from scipy.stats import shapiro
+
+def check_residuals(data, period = 'D', d = 0):
+
+    if period == 'D':
+        num_lags = 40
+
+    elif period == 'W':
+        num_lags = 14
+
+    elif period == 'M':
+        num_lags = 7
+
+    else:
+        return 0
+
+    FAC = {}
+    FAP = {}
+
+    for cg in citygates:
+
+        teste = data[data['CityGate'] == cg].resample(period).sum()
+
+        fig, ax = plt.subplots(3,2,figsize=(24, 16))
+
+        fig.suptitle(cg, fontsize=16)
+
+        lista_fac = sm.tsa.acf(teste.Residuo,
+                           nlags = num_lags,
+                           fft = False)
+
+        FAC.update({cg: lista_fac})
+        
+        lista_fap = sm.tsa.pacf(teste.Residuo,
+                               nlags = num_lags)
+
+        FAP.update({cg: lista_fap})
+
+        sns.lineplot(data=teste, x=teste.index, y= "Volume", ax=ax[0][0])
+
+        sns.lineplot(data=teste, x=teste.index, y = "Previsto", ax=ax[0][0])
+
+        sm.graphics.tsa.plot_acf(teste['Residuo'], lags = num_lags, alpha = 0.05, ax=ax[0][1])
+
+        sm.graphics.tsa.plot_pacf(teste['Residuo'], lags =num_lags,alpha = 0.05, ax=ax[1][1])
+
+        sns.lineplot(data=teste, x=teste.index, y="Residuo", ax=ax[1][0])
+
+        sns.histplot(data=teste, x="Residuo",  ax=ax[2][0])
+
+        alpha = 0.01
+        
+        #stat, p = shapiro(teste['Residuo'])
+
+        texto0 = f"{teste.shape[0]} dias"
+        media = fr'média = {round(teste.Residuo.mean(),3)}'
+        mediana = fr'mediana = {round(teste.Residuo.median(),3)}'
+        desvio = fr'desvio padrão = {round(teste.Residuo.std(),3)}'
+        #normal = "Normal:" + ("Sim" if (p > alpha) else "Não")
+
+        ax[2][1].text(0.5,0.8, media, horizontalalignment='center',fontsize = 25,
+                      verticalalignment='center', transform = ax[2][1].transAxes)
+
+        ax[2][1].text(0.5,0.6, mediana, horizontalalignment='center',fontsize = 25,
+                      verticalalignment='center', transform = ax[2][1].transAxes)
+
+        ax[2][1].text(0.5,0.4, desvio, horizontalalignment='center',fontsize = 25,
+                      verticalalignment='center', transform = ax[2][1].transAxes)  
+
+        ax[2][1].grid(False)
+
+        plt.show()
+        

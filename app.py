@@ -54,13 +54,24 @@ def main():
             
         with st.expander("Métricas Globais"):
             try:
-                df['mape'] = MAPE(df[y_true],df[y_predicted])
                 st.dataframe(df.groupby([data_group]).mape.mean().reset_index())
+                st.dataframe(df)
                 
             except:
                 st.write('Falha')
         
         try:
+            
+            metrica = df[df[data_group]==selected].mape.mean()
+            p_mask = (df['acima5']==True) & (df[data_group]==selected)
+            perc_acima = df.loc[p_mask].shape[0]/df.shape[0]
+            
+            col1, col2, col3 = st.columns(3)
+            #st.metric(label=data_group, value=f"{selected}", delta="")
+            col1.metric(label=data_group, value=f"{selected}", delta="")
+            col2.metric(label="MAPE", value=f"{round(metrica,2)}%", delta="")
+            col3.metric(label="Acima de 5%", value=f"{round(100*perc_acima,2)}%", delta="")
+            
             plot_series(df,
                     time_col,
                     y_true,
@@ -72,7 +83,19 @@ def main():
                     diff = 0)
         except:
             pass
-  
+        
+        try:
+            plot_autocorrelation(df,
+                        time_col,
+                        y_true,
+                        y_predicted,
+                        selected,
+                        data_group,
+                        period = 'D',
+                        diff = 0)
+        except:
+            pass
+           
         try:
             check_residuals(df,
                         time_col,

@@ -1,5 +1,4 @@
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-import statsmodels.api as sm
+
 from scipy.stats import shapiro
 
 import math

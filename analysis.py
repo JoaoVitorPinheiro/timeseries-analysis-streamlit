@@ -1,21 +1,42 @@
-from time import time
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.stattools import pacf, acf
 import statsmodels.api as sm
 from scipy.stats import shapiro
-
 import math
 import numpy as np
 import pandas as pd
 from pandas.plotting import autocorrelation_plot
-import seaborn as sns
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 import streamlit as st
 from typing import List, Any, Dict, Tuple
+
+PLOT_HEIGHT = 450
+PLOT_WIDTH = 650
+
+def format_fig(target_fig,
+               title_text = '',
+               x_title = '',
+               y_title = '',
+               h = PLOT_HEIGHT,
+               w = PLOT_WIDTH):
+    
+        target_fig.update_layout(
+                yaxis_title=y_title,
+                xaxis_title=x_title,
+                legend_title_text="",
+                height=h,
+                width=w,
+                title_text=title_text,
+                title_x=0.5,
+                title_y=0.9,
+                hovermode="x"
+                #paper_bgcolor='rgba(0,0,0,0)',
+                #plot_bgcolor='rgba(0,0,0,0)
+        )
+        return target_fig
 
 def preprocess_dataframe(data: pd.DataFrame,
                          data_group: str,
@@ -28,19 +49,12 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = data[time_col].dt.date
     data['mape'] = MAPE(data[y_true],data[y_predicted])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
-    data['residual'] = data[y_true] - data[y_predicted]
+    data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
+    data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     
     return data 
-
-def read_from_csv(data_file: pd.DataFrame,
-                  time_col: str,
-                  y_true: str,
-                  y_predicted: str
-                ) -> pd.DataFrame:
-    
-    return
 
 def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     """Calcula o Erro Médio Percentual Absoluto (MAPE) multiplicado por 100 para percentual
@@ -106,69 +120,39 @@ def RSE(y_true, y_predicted):
     rse = math.sqrt(RSS / (len(y_true) - 2))
     
     return (y_true - y_predicted)/rse
-
+    
 def check_residuals(data: pd.DataFrame,
                     time_col: str,
-                    y_true: str,
-                    y_predicted: str,
                     selected: str,
                     data_group: str,
-                    period = 'D',
-                    diff = 0):
+                    period = 'D'):
 
-    temp = data[data[data_group] == selected].copy()
+    data = data[data[data_group] == selected]
+    #data.index = pd.DatetimeIndex(data.index)
+    #data = data.resample(period).sum()
     
-    if period == 'D':
-        num_lags = (temp.shape[0]/2)-1
-    elif period == 'M':
-        num_lags = (temp.shape[0]/2)-1
-    else:
-        return None
-    temp[time_col] = pd.to_datetime(temp[time_col], format = '%Y-%m-%d')
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data[time_col],
+                            y=data['residuo'],
+                            mode='lines',
+                            name='Resíduo'))
     
-    temp.index = pd.DatetimeIndex(temp.index)
-    
-    temp = temp.resample(period).sum()
-
-    temp['residual'] = temp[y_true] - temp[y_predicted]
-
-    alpha = 0.01
-        
-    #stat, p = shapiro(temp['Residuo'])
-
-    texto0 = f"{temp.shape[0]} dias"
-    media = fr'média = {round(temp.residual.mean(),3)}'
-    mediana = fr'mediana = {round(temp.residual.median(),3)}'
-    desvio = fr'desvio padrão = {round(temp.residual.std(),3)}'
-    #normal = "Normal:" + ("Sim" if (p > alpha) else "Não")
-
-    fig = make_subplots(
-    rows=2, cols=2, subplot_titles=("Autocorrelação", "Autocorrelação Parcial")
-)
-
-    # Add traces
-    fig.add_trace(go.Scatter(x=[1, 2, 3], y=[4, 5, 6]), row=1, col=1)
-    fig.add_trace(go.Scatter(x=[20, 30, 40], y=[50, 60, 70]), row=1, col=2)
-    fig.add_trace(go.Scatter(x=[300, 400, 500], y=[600, 700, 800]), row=2, col=1)
-    fig.add_trace(go.Scatter(x=[4000, 5000, 6000], y=[7000, 8000, 9000]), row=2, col=2)
-
-    # Update xaxis properties
-    fig.update_xaxes(title_text="xaxis 1 title", row=1, col=1)
-    fig.update_xaxes(title_text="xaxis 2 title", range=[10, 50], row=1, col=2)
-    fig.update_xaxes(title_text="xaxis 3 title", showgrid=False, row=2, col=1)
-    fig.update_xaxes(title_text="xaxis 4 title", type="log", row=2, col=2)
-
-    # Update yaxis properties
-    fig.update_yaxes(title_text="yaxis 1 title", row=1, col=1)
-    fig.update_yaxes(title_text="yaxis 2 title", range=[40, 80], row=1, col=2)
-    fig.update_yaxes(title_text="yaxis 3 title", showgrid=False, row=2, col=1)
-    fig.update_yaxes(title_text="yaxis 4 title", row=2, col=2)
-
-    # Update title and height
-    fig.update_layout(title_text="Customizing Subplot Axes", height=700)
-
+    fig.update_xaxes(title_text="Data")
+    fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
+    fig = format_fig(fig)
     st.plotly_chart(fig, use_container_width=True)
-        
+    
+    fig = go.Figure()
+    #fig.add_trace(corr_plot(data['residuo']), row=1, col=2)
+    fig.add_trace(go.Histogram(x=data['residuo']))
+    fig = format_fig(fig)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    corr_plot(data['residuo'])
+    corr_plot(data['residuo'], plot_pacf=True)
+    #fig.add_trace(corr_plot(data['residuo'], plot_pacf = True), row=2, col=2)
+    
+ 
 def plot_series(data: pd.DataFrame,
                     time_col: str,
                     y_true: str,
@@ -222,8 +206,8 @@ def plot_series(data: pd.DataFrame,
     fig.update_layout(
                 yaxis_title='Consumo',
                 legend_title_text="",
-                height=600,
-                width=1000,
+                height=PLOT_HEIGHT,
+                width=PLOT_WIDTH,
                 title_text="Previsto vs Real",
                 title_x=0.5,
                 title_y=1,
@@ -283,6 +267,9 @@ def plot_daily_error(df, predictions, test, city_gate, limit=5):
     
     return fig
 
+def plot_global_metrics():
+    return
+    
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     """Exibe histograma com distribuição dos valores de erro."""
     err_df = pd.merge(test, predictions, left_index=True, right_index=True, how='inner')
@@ -316,34 +303,82 @@ def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     
     return fig
 
-def plot_autocorrelation(df, selected, col, ax, interpol_method='linear', lags=None):
-    """Exibe gráfico de autocorrelação para a série temporal desejada. 
-    É possível controlar os limites de lag através do parâmetro xlim."""
-    
-    autocorrelation_plot(df.query(f'city_gate == "{selected}"').set_index('data')[col].interpolate(method=interpol_method), ax)
-    
-    if lags is not None:
-        ax.set_xlim([1, lags])
-    
-    labels = {'volume': 'Volume', 'pcs': 'PCS'}
-    if col in labels.keys():
-        col = labels[col]
+def corr_plot(series, plot_pacf=False):
+    corr_array = pacf(series.dropna(), alpha=0.05) if plot_pacf else acf(series.dropna(), alpha=0.05)
+    lower_y = corr_array[1][:,0] - corr_array[0]
+    upper_y = corr_array[1][:,1] - corr_array[0]
 
-    ax.set_title(f'Autocorrelação - {col} - {selected}', fontsize=15)
+    fig = go.Figure()
+    [fig.add_scatter(x=(x,x), y=(0,corr_array[0][x]), mode='lines',line_color='#3f3f3f') 
+     for x in range(len(corr_array[0]))]
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=corr_array[0], mode='markers', marker_color='#1f77b4',
+                   marker_size=12)
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=upper_y, mode='lines', line_color='rgba(255,255,255,0)')
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=lower_y, mode='lines',fillcolor='rgba(32, 146, 230,0.3)',
+            fill='tonexty', line_color='rgba(255,255,255,0)')
+    fig.update_traces(showlegend=False)
+    fig.update_xaxes(title_text="Lags", range=[-1,35])
+    fig.update_yaxes(showgrid=False, zerolinecolor='#000000')
     
-    return ax
+    title='Partial Autocorrelation (PACF)' if plot_pacf else 'Autocorrelation (ACF)'
+    fig = format_fig(fig, title_text = title)
+    #fig.update_layout(title=title)
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+def check_residuals2(data: pd.DataFrame,
+                time_col: str,
+                selected: str,
+                data_group: str,
+                period = 'D'):
 
-def plot_partial_autocorrelation(df, city_gate, col, ax, lags, interpol_method='linear'):
-    """Exibe gráfico de autocorrelação parcial para a série temporal desejada.
-    É possível controlar o número de lags a serem considerados através do parâmetro lags."""
-    cg_vol = df.query(f'city_gate == "{city_gate}"').set_index('data')[col].asfreq('D').interpolate(method=interpol_method)
+    data = data[data[data_group] == selected]
+    #data.index = pd.DatetimeIndex(data.index)
+    #data = data.resample(period).sum()
     
-    _ = plot_pacf(cg_vol, lags=lags, ax=ax)
+    num_lags = 45
+
+    fig = make_subplots(
+    rows=2, cols=2, subplot_titles=("1", "2", '3', '4')
+    )
+
+    plot_pacf = True
+    corr_array = pacf(data['residuo'], alpha=0.05) if plot_pacf else acf(data['residuo'], alpha=0.05)
+    lower_y = corr_array[1][:,0] - corr_array[0]
+    upper_y = corr_array[1][:,1] - corr_array[0]
+
+    [fig.add_scatter(x=(x,x), y=(0,corr_array[0][x]), mode='lines',line_color='#3f3f3f', row=1, col=2) 
+    for x in range(len(corr_array[0]))]
     
-    labels = {'volume': 'Volume', 'pcs': 'PCS'}
-    if col in labels.keys():
-        col = labels[col]
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=corr_array[0], mode='markers', marker_color='#1f77b4',
+                marker_size=12, row=1, col=2)
     
-    ax.set_title(f'Autocorrelação Parcial - {col} - {city_gate}', fontsize=15)
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=upper_y, mode='lines', line_color='rgba(255,255,255,0)', row=1, col=2)
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=lower_y, mode='lines',fillcolor='rgba(32, 146, 230,0.3)',
+            fill='tonexty', line_color='rgba(255,255,255,0)', row=1, col=2)
     
-    return ax
+    # Add traces
+    
+    #fig.add_trace(corr_plot(data['residuo']), row=1, col=2)
+    fig.add_trace(go.Histogram(x=data['residuo']), row=2, col=1)
+    #fig.add_trace(corr_plot(data['residuo'], plot_pacf = True), row=2, col=2)
+    fig.add_trace(go.Scatter(x=data[time_col],
+                            y=data['residuo'],
+                            mode='lines',
+                            name='Resíduo'), row=1, col=1)
+    # Update xaxis properties
+    fig.update_xaxes(title_text="Resíduo", row=1, col=1)
+    fig.update_xaxes(title_text="ACF", range=[0, num_lags], row=1, col=2)
+    fig.update_xaxes(title_text="Histograma", row=2, col=1)
+    fig.update_xaxes(title_text="PACF", row=2, col=2)
+
+    # Update yaxis properties
+    fig.update_yaxes(title_text='Resíduo', showgrid=False, row=1, col=1)
+    fig.update_yaxes(title_text="Lags", showgrid=False, row=1, col=2)
+    fig.update_yaxes(title_text="Histograma", showgrid=False, row=2, col=1)
+    fig.update_yaxes(title_text="Lags", showgrid=False, row=2, col=2)
+
+    # Update title and height
+    fig.update_layout(title_text="Avaliação dos Resíduos", height=700)
+
+    st.plotly_chart(fig, use_container_width=True)

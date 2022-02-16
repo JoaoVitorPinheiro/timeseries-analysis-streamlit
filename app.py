@@ -48,7 +48,7 @@ def main():
                 st.warning('Error: Fim < Inicio.')
 
             st.write('Período selecionado:', start_date, '-', end_date)
-            mask = (df[time_col] > start_date) & (df[time_col] <= end_date)
+            mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
             df = df.loc[mask]
             df = preprocess_dataframe(df, data_group, time_col, y_true, y_predicted)
             

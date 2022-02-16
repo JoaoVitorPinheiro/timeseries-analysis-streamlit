@@ -24,6 +24,7 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = pd.to_datetime(data[time_col],format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     data['mape'] = MAPE(data[y_true],data[y_predicted])
+    data['mape'] = np.where(data['mape']>100, 100,data['mape'])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
@@ -49,8 +50,7 @@ def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
         residual = y_true - y_predicted
         mape = np.where(y_true!=0, residual/y_true, np.nan)
         mape = np.where((residual==0) & (y_predicted==0), 0, mape)
-        mape = np.where(mape > 0.5, 0.1, mape)
-        
+        #mape = np.where(mape > 0.5, 0.1, mape)
         return 100*np.abs(mape)
     except:
         return 0   

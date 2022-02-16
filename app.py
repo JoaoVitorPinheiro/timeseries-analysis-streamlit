@@ -45,7 +45,7 @@ def main():
             if start_date <= end_date:
                 pass
             else:
-                st.error('Error: Fim < Inicio.')
+                st.warning('Error: Fim < Inicio.')
 
             st.write('Período selecionado:', start_date, '-', end_date)
             mask = (df[time_col] > start_date) & (df[time_col] <= end_date)

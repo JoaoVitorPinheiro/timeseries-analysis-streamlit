@@ -1,7 +1,7 @@
 import streamlit as st
 import os
    
-PLOT_HEIGHT = 450
+PLOT_HEIGHT = 500
 PLOT_WIDTH = 650
 BACKGROUND_COLOR = 'white'
 COLOR = 'black'

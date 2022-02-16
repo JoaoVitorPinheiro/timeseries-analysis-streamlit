@@ -21,26 +21,24 @@ def main():
         y_true = st.sidebar.selectbox("Selecione a série real:", df.columns)
         y_predicted = st.sidebar.selectbox("Selecione a série prevista:", df.columns)
         
-        try:
-            df = preprocess_dataframe(df, data_group, time_col, y_true, y_predicted)
-            st.dataframe(df[data_group, time_col, y_true, y_predicted])
-        except:
-            pass
+        df = preprocess_dataframe(df,
+                                data_group,
+                                time_col,
+                                y_true,
+                                y_predicted)
                 
         with st.expander("Dados"):
             try:
                 st.dataframe(df)
             except:
-                st.write('falha')
+                st.warning("falha")
 
         st.header("1. Parâmetros:")
         try:
             st.subheader('Recorte Temporal:')
             start_date, end_date = st.slider('',
-                                                df[time_col].min(),
-                                                df[time_col].max(),
-                                                value=[df[time_col].min(), df[time_col].max()],
-                                                key='first')
+                                value=[df[time_col].min(), df[time_col].max()],
+                                key='first')
             
             if start_date <= end_date:
                 pass
@@ -50,15 +48,20 @@ def main():
             st.write('Período selecionado:', start_date, '-', end_date)
             mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
             df = df.loc[mask]
-            df = preprocess_dataframe(df, data_group, time_col, y_true, y_predicted)
-            
+            df = preprocess_dataframe(df,
+                                    data_group,
+                                    time_col,
+                                    y_true,
+                                    y_predicted)
+           
             with st.expander("Métricas Globais"):
                 try:
                     create_global_metrics(df, data_group)   
                 except:
                     st.write('falha')
                 
-            selected = st.selectbox(f"Selecione o {data_group}:", sorted(df[data_group].unique().tolist()))
+            selected = st.selectbox(f"Selecione o {data_group}:",
+                                    sorted(df[data_group].unique().tolist()))
         except: 
             pass      
                 
@@ -79,7 +82,9 @@ def main():
             delta2 = np.round(metrica-5,2)
             delta3 = perc_acima5-5
             
-            col1.metric(label=data_group, value=f"{selected}", delta="")
+            col1.metric(label=data_group,
+                        value=f"{selected}",
+                        delta="")
             col2.metric(label="MAPE",
                         value=f"{round(metrica,2)}%",
                         delta=f"{delta2}%",
@@ -89,7 +94,6 @@ def main():
                         delta="")
         except:
             pass
-        
         
         try:   
             st.header("2. Propriedades dos Resíduos")

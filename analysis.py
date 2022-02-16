@@ -24,6 +24,8 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = pd.to_datetime(data[time_col],format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     data['mape'] = MAPE(data[y_true],data[y_predicted])
+    
+    # Limiar do MAPE para evitar distorções
     data['mape'] = np.where(data['mape']>100, 100,data['mape'])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
@@ -31,7 +33,7 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     
-    return data 
+    return data
 
 def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     """Calcula o Erro Médio Percentual Absoluto (MAPE) multiplicado por 100 para percentual
@@ -107,12 +109,13 @@ def check_residuals(data: pd.DataFrame,
     
     fig.update_xaxes(title_text="Data")
     fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
-    fig = format_fig(fig)
+    fig = format_fig(fig, 'Série dos Resíduos', x_title=time_col, y_title='Resíduo')
+
     st.plotly_chart(fig, use_container_width=True)
     
     fig = go.Figure()
     fig.add_trace(go.Histogram(x=data['residuo']))
-    fig = format_fig(fig)
+    fig = format_fig(fig, 'Distribuição dos Resíduos', x_title='Resíduo', y_title='Contagem')
     st.plotly_chart(fig, use_container_width=True)
     
     corr_plot(data['residuo'])
@@ -179,10 +182,8 @@ def plot_series(data: pd.DataFrame,
                 hovermode="x unified"
         )
     
-    #paper_bgcolor='rgba(0,0,0,0)'
-    #plot_bgcolor='rgba(0,0,0,0)'
     st.plotly_chart(fig, use_container_width=True)
-
+    
 def plot_daily_error(df, predictions, test, city_gate, limit=5):
     """Exibe gráfico com desvio percentual diário para cada predição realizada."""
     # Calculando PCS médio por city gate
@@ -233,11 +234,22 @@ def plot_daily_error(df, predictions, test, city_gate, limit=5):
     return fig
 
 def create_global_metrics(data, data_group):
-    data = data.groupby([data_group]).mean().reset_index()
-    fig = go.Figure(go.Bar(x=data[data_group].unique().tolist(), y=data['mape']))
-    fig.update_xaxes(categoryorder='category ascending')
     
+    # Cálculo do MAPE
+    data = data.groupby([data_group]).mean().reset_index()
+    fig = go.Figure(data=[go.Bar(x=data[data_group].unique().tolist(),
+                                 y=data["mape"], text = data["mape"])])
+    # Customize aspect
+    fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
+                  marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.3s}', textposition='outside')
+    fig.update_layout(title_text='MAPE', hovermode='x')          
+    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    #fig.update_xaxes(categoryorder='category ascending')
+    fig = format_fig(fig, 'MAPE', x_title=data_group, y_title='Percentual')
     st.plotly_chart(fig, use_container_width=True)
+    # Cálculo do Percentual Acima5%
+    
+    
     
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     """Exibe histograma com distribuição dos valores de erro."""
@@ -286,11 +298,11 @@ def corr_plot(series, plot_pacf=False):
     fig.add_scatter(x=np.arange(len(corr_array[0])), y=lower_y, mode='lines',fillcolor='rgba(32, 146, 230,0.3)',
             fill='tonexty', line_color='rgba(255,255,255,0)')
     fig.update_traces(showlegend=False)
-    fig.update_xaxes(title_text="Lags", range=[-1,35])
+    fig.update_xaxes(title_text="Lags", range=[-1, len(corr_array[0])])
     fig.update_yaxes(showgrid=False, zerolinecolor='#000000')
     
     title='Partial Autocorrelation (PACF)' if plot_pacf else 'Autocorrelation (ACF)'
-    fig = format_fig(fig, title_text = title)
+    fig = format_fig(fig, title_text = title, x_title = 'Lags', y_title='Corr')
     #fig.update_layout(title=title)
     
     st.plotly_chart(fig, use_container_width=True)
@@ -308,7 +320,7 @@ def create_error_metrics(data: pd.DataFrame,
     num_lags = 45
 
     fig = make_subplots(
-    rows=2, cols=2, subplot_titles=("1", "2", '3', '4')
+    rows=2, cols=2, subplot_titles=("1", "2", "3", "4")
     )
 
     plot_pacf = True

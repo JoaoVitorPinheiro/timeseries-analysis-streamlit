@@ -47,7 +47,7 @@ def main():
                                                 value=[df[time_col].min(), df[time_col].max()],
                                                 key='first')
             
-            if start_date < end_date:
+            if start_date <= end_date:
                 pass
             else:
                 st.error('Error: Fim < Inicio.')

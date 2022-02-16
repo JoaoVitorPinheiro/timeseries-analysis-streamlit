@@ -1,10 +1,11 @@
+from cmath import e
 from analysis import *
 from dashboard import *
 
 def main():
-    st.title("Análise da Previsão")
-
-    data_file = st.sidebar.file_uploader("Upload CSV",type=["csv"])
+    with st.expander("Sobre"):
+        st.write('descricao aqui')
+    data_file = st.sidebar.file_uploader("Selecionar arquivo CSV",type=["csv"])
     if data_file is not None:
         file_details = {"nome do arquivo":data_file.name,
                   "tipo do arquivo":data_file.type,
@@ -25,22 +26,16 @@ def main():
             st.dataframe(df[data_group, time_col, y_true, y_predicted])
         except:
             pass
-        
-        with st.expander("Métricas Globais"):
-            try:
-                st.dataframe(df.groupby([data_group]).mape.mean().reset_index())
-            except:
-                st.write('Falha')
-        
+                
         with st.expander("Dados"):
             try:
                 st.dataframe(df)
             except:
-                st.write('Falha')
+                st.write('falha')
 
         st.header("1. Parâmetros:")
         try:
-            st.write('Recorte Temporal:')
+            st.subheader('Recorte Temporal:')
             start_date, end_date = st.slider('',
                                                 df[time_col].min(),
                                                 df[time_col].max(),
@@ -55,10 +50,18 @@ def main():
             st.write('Período selecionado:', start_date, '-', end_date)
             mask = (df[time_col] > start_date) & (df[time_col] <= end_date)
             df = df.loc[mask]
+            df = preprocess_dataframe(df, data_group, time_col, y_true, y_predicted)
+            
+            with st.expander("Métricas Globais"):
+                try:
+                    create_global_metrics(df, data_group)   
+                except:
+                    st.write('falha')
+                
             selected = st.selectbox(f"Selecione o {data_group}:", sorted(df[data_group].unique().tolist()))
         except: 
             pass      
-
+                
         try:
             plot_series(df,
                     time_col,
@@ -71,13 +74,22 @@ def main():
             
             metrica = df[df[data_group]==selected].mape.mean()
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
-            perc_acima = df.loc[p_mask].shape[0]/df.shape[0]
+            perc_acima5 = df.loc[p_mask].shape[0]/df.shape[0]
             col1, col2, col3 = st.columns(3)
+            delta2 = np.round(metrica-5,2)
+            delta3 = perc_acima5-5
+            
             col1.metric(label=data_group, value=f"{selected}", delta="")
-            col2.metric(label="MAPE", value=f"{round(metrica,2)}%", delta="")
-            col3.metric(label="Acima de 5%", value=f"{round(100*perc_acima,2)}%", delta="")
+            col2.metric(label="MAPE",
+                        value=f"{round(metrica,2)}%",
+                        delta=f"{delta2}%",
+                        delta_color="inverse")
+            col3.metric(label="Acima de 5%",
+                        value=f"{round(100*perc_acima5,2)}%",
+                        delta="")
         except:
             pass
+        
         
         try:   
             st.header("2. Propriedades dos Resíduos")
@@ -87,8 +99,8 @@ def main():
                         data_group)
         except: 
             pass
+        
 if __name__ == "__main__":
     set_streamlit()
     set_page_container_style()
-    
     main()

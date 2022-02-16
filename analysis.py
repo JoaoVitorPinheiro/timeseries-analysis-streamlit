@@ -12,31 +12,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 from typing import List, Any, Dict, Tuple
-
-PLOT_HEIGHT = 450
-PLOT_WIDTH = 650
-
-def format_fig(target_fig,
-               title_text = '',
-               x_title = '',
-               y_title = '',
-               h = PLOT_HEIGHT,
-               w = PLOT_WIDTH):
-    
-        target_fig.update_layout(
-                yaxis_title=y_title,
-                xaxis_title=x_title,
-                legend_title_text="",
-                height=h,
-                width=w,
-                title_text=title_text,
-                title_x=0.5,
-                title_y=0.9,
-                hovermode="x"
-                #paper_bgcolor='rgba(0,0,0,0)',
-                #plot_bgcolor='rgba(0,0,0,0)
-        )
-        return target_fig
+from dashboard import * 
 
 def preprocess_dataframe(data: pd.DataFrame,
                          data_group: str,
@@ -71,11 +47,8 @@ def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     """
     try:
         residual = y_true - y_predicted
-    
         mape = np.where(y_true!=0, residual/y_true, np.nan)
-        
         mape = np.where((residual==0) & (y_predicted==0), 0, mape)
-        
         mape = np.where(mape > 0.5, 0.1, mape)
         
         return 100*np.abs(mape)
@@ -97,11 +70,8 @@ def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     """
     try:
         residual = (y_true - y_predicted)
-    
         mpe = np.where(y_true!=0, residual/y_true, np.nan)
-        
         mpe = np.where((residual==0) & (y_predicted==0), 0, mpe)
-        
         mpe = np.where(mpe > 0.5, 0.1, mpe)
         
         return mpe*100
@@ -110,15 +80,13 @@ def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     
 def RSE(y_true, y_predicted):
     """
-    - y_true: Actual values
-    - y_predicted: Predicted values
+    - y_true: Valores Observados
+    - y_predicted: Valores Previstos
     """
     y_true = np.array(y_true)
     y_predicted = np.array(y_predicted)
-    RSS = np.sum(np.square(y_true - y_predicted))
-
-    rse = math.sqrt(RSS / (len(y_true) - 2))
-    
+    rss = np.sum(np.square(y_true - y_predicted))
+    rse = math.sqrt(rss / (len(y_true) - 2))
     return (y_true - y_predicted)/rse
     
 def check_residuals(data: pd.DataFrame,
@@ -143,16 +111,13 @@ def check_residuals(data: pd.DataFrame,
     st.plotly_chart(fig, use_container_width=True)
     
     fig = go.Figure()
-    #fig.add_trace(corr_plot(data['residuo']), row=1, col=2)
     fig.add_trace(go.Histogram(x=data['residuo']))
     fig = format_fig(fig)
     st.plotly_chart(fig, use_container_width=True)
     
     corr_plot(data['residuo'])
     corr_plot(data['residuo'], plot_pacf=True)
-    #fig.add_trace(corr_plot(data['residuo'], plot_pacf = True), row=2, col=2)
     
- 
 def plot_series(data: pd.DataFrame,
                     time_col: str,
                     y_true: str,
@@ -211,11 +176,11 @@ def plot_series(data: pd.DataFrame,
                 title_text="Previsto vs Real",
                 title_x=0.5,
                 title_y=1,
-                hovermode="x unified",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
+                hovermode="x unified"
         )
     
+    #paper_bgcolor='rgba(0,0,0,0)'
+    #plot_bgcolor='rgba(0,0,0,0)'
     st.plotly_chart(fig, use_container_width=True)
 
 def plot_daily_error(df, predictions, test, city_gate, limit=5):
@@ -267,8 +232,12 @@ def plot_daily_error(df, predictions, test, city_gate, limit=5):
     
     return fig
 
-def plot_global_metrics():
-    return
+def create_global_metrics(data, data_group):
+    data = data.groupby([data_group]).mean().reset_index()
+    fig = go.Figure(go.Bar(x=data[data_group].unique().tolist(), y=data['mape']))
+    fig.update_xaxes(categoryorder='category ascending')
+    
+    st.plotly_chart(fig, use_container_width=True)
     
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     """Exibe histograma com distribuição dos valores de erro."""
@@ -326,7 +295,7 @@ def corr_plot(series, plot_pacf=False):
     
     st.plotly_chart(fig, use_container_width=True)
     
-def check_residuals2(data: pd.DataFrame,
+def create_error_metrics(data: pd.DataFrame,
                 time_col: str,
                 selected: str,
                 data_group: str,
@@ -382,3 +351,4 @@ def check_residuals2(data: pd.DataFrame,
     fig.update_layout(title_text="Avaliação dos Resíduos", height=700)
 
     st.plotly_chart(fig, use_container_width=True)
+    

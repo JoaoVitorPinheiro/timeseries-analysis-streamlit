@@ -3,6 +3,11 @@ from analysis import *
 from dashboard import *
 
 def main():
+    st.sidebar.title("Navegação")
+    choice = st.sidebar.radio(
+     "",
+     ('Métricas Globais', 'Análise de Resíduos', 'Documentary'))
+    
     with st.expander("Sobre"):
         st.markdown("""
             ####
@@ -13,78 +18,73 @@ def main():
                 - Função de Autocorrelação dos resíduos
             ######""",
     unsafe_allow_html = True)
-    data_file = st.sidebar.file_uploader("Selecionar arquivo CSV",type=["csv"])
-    if data_file is not None:
-        file_details = {"nome do arquivo":data_file.name,
-                  "tipo do arquivo":data_file.type,
-                  "tamanho do arquivo":data_file.size}
+    
+    with st.sidebar.expander("Leitura de arquivo"):    
+        data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
+        if data_file is not None:
+            file_details = {"nome do arquivo":data_file.name,
+                    "tipo do arquivo":data_file.type,
+                    "tamanho do arquivo":data_file.size}
 
-        df = pd.read_csv(data_file, parse_dates=True)
-        
-        #with st.expander("Informações dos dados:"):
-        #    st.write(file_details)
+            df = pd.read_csv(data_file, parse_dates=True)
+            #with st.expander("Informações dos dados:"):
+            #    st.write(file_details)
+                
+            data_group = st.selectbox("Selecione o grupo:", df.columns)
+            time_col = st.selectbox("Selecione a coluna temporal:", df.columns)
+            y_true = st.selectbox("Selecione a série real:", df.columns)
+            y_predicted = st.selectbox("Selecione a série prevista:", df.columns)
             
-        data_group = st.sidebar.selectbox("Selecione o grupo:", df.columns)
-        time_col = st.sidebar.selectbox("Selecione a coluna temporal:", df.columns)
-        y_true = st.sidebar.selectbox("Selecione a série real:", df.columns)
-        y_predicted = st.sidebar.selectbox("Selecione a série prevista:", df.columns)
-        
-        try:
             df = preprocess_dataframe(df,
                                     data_group,
                                     time_col,
                                     y_true,
                                     y_predicted)
-        except:
+        
+    try:
+        st.sidebar.subheader('Recorte Temporal:')
+        start_date, end_date = st.sidebar.slider('',
+                            value=[df[time_col].min(), df[time_col].max()],
+                            key='first')
+
+        if start_date <= end_date:
             pass
-            
+        else:
+            st.sidebar.warning('Error: Fim < Inicio.')
+
+        st.sidebar.write('Período:', start_date, '-', end_date)
+        mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
+        df = df.loc[mask]
+        df = preprocess_dataframe(df,
+                                data_group,
+                                time_col,
+                                y_true,
+                                y_predicted)
+    except:
+        pass
+    
+    if choice == 'Métricas Globais':
         with st.expander("Dados"):
             try:
                 st.dataframe(df)
             except:
-                st.warning("falha")
-
-        st.header("1. Parâmetros:")
+                st.warning("Sem arquivo")
         try:
-            st.subheader('Recorte Temporal:')
-            start_date, end_date = st.slider('',
-                                value=[df[time_col].min(), df[time_col].max()],
-                                key='first')
-            
-            if start_date <= end_date:
-                pass
-            else:
-                st.warning('Error: Fim < Inicio.')
-
-            st.write('Período selecionado:', start_date, '-', end_date)
-            mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
-            df = df.loc[mask]
-            df = preprocess_dataframe(df,
-                                    data_group,
-                                    time_col,
-                                    y_true,
-                                    y_predicted)
-           
-            with st.expander("Métricas Globais"):
-                try:
-                    create_global_metrics(df, data_group)   
-                except:
-                    st.write('falha')
-                
-            selected = st.selectbox(f"Selecione o {data_group}:",
-                                    sorted(df[data_group].unique().tolist()))
+            create_global_metrics(df, data_group)   
+        except:
+            st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+    
+    elif choice == 'Análise de Resíduos':    
+        try:
+            #selected = st.selectbox(f"Selecione o {data_group}:",
+            #                        sorted(df[data_group].unique().tolist()))'''
+            selected = st.select_slider(
+                f"Selecione o {data_group}:",
+                options=sorted(df[data_group].unique().tolist()))
         except: 
             pass      
                 
         try:
-            plot_series(df,
-                    time_col,
-                    y_true,
-                    y_predicted,
-                    data_group,
-                    selected,
-                    period = 'D',
-                    diff = 0)
             
             metrica = df[df[data_group]==selected].mape.mean()
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
@@ -103,6 +103,16 @@ def main():
             col3.metric(label="Acima de 5%",
                         value=f"{round(100*perc_acima5,2)}%",
                         delta="")
+            
+            plot_series(df,
+                    time_col,
+                    y_true,
+                    y_predicted,
+                    data_group,
+                    selected,
+                    period = 'D',
+                    diff = 0)
+            
         except:
             pass
         

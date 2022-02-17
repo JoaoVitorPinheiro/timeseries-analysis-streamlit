@@ -21,6 +21,7 @@ def preprocess_dataframe(data: pd.DataFrame,
                          y_predicted: str,
                          ) -> pd.DataFrame:
     
+    # Timestamp errado
     data[time_col] = pd.to_datetime(data[time_col],format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     data['mape'] = MAPE(data[y_true],data[y_predicted])

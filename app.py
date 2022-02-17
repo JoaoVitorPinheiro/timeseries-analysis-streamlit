@@ -4,14 +4,22 @@ from dashboard import *
 
 def main():
     with st.expander("Sobre"):
-        st.write('descricao aqui')
+        st.markdown("""
+            ####
+                Análise de performance de modelos de previsão de séries temporais
+            ###### Features
+                - MAPE e RMSE dos modelos
+                - Histogramas e Boxplots dos resíduos
+                - Função de Autocorrelação dos resíduos
+            ######""",
+    unsafe_allow_html = True)
     data_file = st.sidebar.file_uploader("Selecionar arquivo CSV",type=["csv"])
     if data_file is not None:
         file_details = {"nome do arquivo":data_file.name,
                   "tipo do arquivo":data_file.type,
                   "tamanho do arquivo":data_file.size}
 
-        df = pd.read_csv(data_file)
+        df = pd.read_csv(data_file, parse_dates=True)
         
         #with st.expander("Informações dos dados:"):
         #    st.write(file_details)
@@ -21,12 +29,15 @@ def main():
         y_true = st.sidebar.selectbox("Selecione a série real:", df.columns)
         y_predicted = st.sidebar.selectbox("Selecione a série prevista:", df.columns)
         
-        df = preprocess_dataframe(df,
-                                data_group,
-                                time_col,
-                                y_true,
-                                y_predicted)
-                
+        try:
+            df = preprocess_dataframe(df,
+                                    data_group,
+                                    time_col,
+                                    y_true,
+                                    y_predicted)
+        except:
+            pass
+            
         with st.expander("Dados"):
             try:
                 st.dataframe(df)
@@ -97,10 +108,12 @@ def main():
         
         try:   
             st.header("2. Propriedades dos Resíduos")
+            standardize = st.checkbox('Resíduo Padronizado')
             check_residuals(df,
                         time_col,
                         selected,
-                        data_group)
+                        data_group,
+                        standardize=standardize)
         except: 
             pass
         

@@ -59,9 +59,9 @@ def format_fig(target_fig,
                 legend_title_text="",
                 height=h,
                 width=w,
-                title_text=title_text,
+                #title_text=title_text,
                 title_x=0.5,
-                title_y=0.9,
+                title_y=1,
                 hovermode="x"
                 #paper_bgcolor='rgba(0,0,0,0)',
                 #plot_bgcolor='rgba(0,0,0,0)

@@ -30,11 +30,16 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
-    data['lim_sup'] = np.abs(data[y_true]*5/100)
-    data['lim_inf'] = -1*np.abs(data[y_true]*5/100)
+    data['lim_sup'] = 1.96
+    data['lim_inf'] = -1.96
     data[y_true+'_diff'] = data[y_true].diff()
-    data = data.sort_values(by = time_col, ascending=True)
     
+    for item in sorted(data[data_group].unique().tolist()):
+        data.loc[data[data_group] == item, 'std_residuo'] = \
+            RSE(data.loc[data[data_group] == item, y_true],
+                data.loc[data[data_group] == item, y_predicted])
+            
+    data = data.sort_values(by = time_col, ascending=True)
     return data
 
 def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
@@ -97,6 +102,7 @@ def check_residuals(data: pd.DataFrame,
                     time_col: str,
                     selected: str,
                     data_group: str,
+                    standardize: bool,
                     period = 'D'):
 
     data = data[data[data_group] == selected]
@@ -104,24 +110,38 @@ def check_residuals(data: pd.DataFrame,
     #data = data.resample(period).sum()
     
     fig = go.Figure()
-    fig.add_trace(go.Scattergl(x=data[time_col],
-                            y=data['residuo'],
+    if standardize:
+        fig.add_trace(go.Scattergl(x=data[time_col],
+                            y=data['std_residuo'],
                             mode='lines',
-                            name='Resíduo'))
-    fig.add_trace(go.Scattergl(
-            y=data['lim_sup'], 
-            x=data[time_col],
-            line=dict(color='red'),
-            opacity=0.45,
-            name='+5%'))
-
-    fig.add_trace(go.Scattergl(
-            y=data['lim_inf'], 
-            x=data[time_col],
-            line=dict(color='red'),
-            opacity=0.45,
-            name='-5%'))
-    
+                            line=dict(color='rgb(32,4,114)'),
+                            showlegend=False,
+                            name='Resíduo Padronizado'))
+        fig.add_trace(go.Scatter(
+                y=data['lim_sup'], 
+                x=data[time_col],
+                line=dict(width=0),
+                mode='lines',
+                marker=dict(color="#444"),
+                showlegend=False,
+                name='+5%'))
+        fig.add_trace(go.Scatter(
+                y=data['lim_inf'], 
+                x=data[time_col],
+                mode='lines',
+                line=dict(width=0),
+                fillcolor='rgba(167, 0, 91, 0.2)',
+                fill='tonexty',
+                showlegend=False,
+                marker=dict(color="#444"),
+                name='-5%'))
+    else:
+        fig.add_trace(go.Scattergl(x=data[time_col],
+                                y=data['residuo'],
+                                mode='lines',
+                                line=dict(color='rgb(32,4,114)'),
+                                name='Resíduo'))
+        
     fig.update_xaxes(title_text="Data")
     fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
     fig = format_fig(fig, 'Série dos Resíduos', x_title=time_col, y_title='Resíduo')
@@ -267,6 +287,7 @@ def create_global_metrics(data, data_group):
     #fig.update_xaxes(categoryorder='category ascending')
     fig = format_fig(fig, 'MAPE', x_title=data_group, y_title='Percentual')
     st.plotly_chart(fig, use_container_width=True)
+    # Cálculo do RMSE
     # Cálculo do Percentual Acima5%
     
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):

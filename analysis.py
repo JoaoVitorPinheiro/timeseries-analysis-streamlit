@@ -111,7 +111,7 @@ def check_residuals(data: pd.DataFrame,
     
     fig = go.Figure()
     if standardize:
-        fig.add_trace(go.Scattergl(x=data[time_col],
+        fig.add_trace(go.Scatter(x=data[time_col],
                             y=data['std_residuo'],
                             mode='lines',
                             line=dict(color='rgb(32,4,114)'),

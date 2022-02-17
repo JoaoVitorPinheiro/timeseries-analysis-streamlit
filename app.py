@@ -77,7 +77,7 @@ def main():
             
             metrica = df[df[data_group]==selected].mape.mean()
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
-            perc_acima5 = df.loc[p_mask].shape[0]/df.shape[0]
+            perc_acima5 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
             col1, col2, col3 = st.columns(3)
             delta2 = np.round(metrica-5,2)
             delta3 = perc_acima5-5

@@ -30,6 +30,8 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
+    data['lim_sup'] = np.abs(data[y_true]*5/100)
+    data['lim_inf'] = -1*np.abs(data[y_true]*5/100)
     data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     
@@ -102,10 +104,23 @@ def check_residuals(data: pd.DataFrame,
     #data = data.resample(period).sum()
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data[time_col],
+    fig.add_trace(go.Scattergl(x=data[time_col],
                             y=data['residuo'],
                             mode='lines',
                             name='Resíduo'))
+    fig.add_trace(go.Scattergl(
+            y=data['lim_sup'], 
+            x=data[time_col],
+            line=dict(color='red'),
+            opacity=0.45,
+            name='+5%'))
+
+    fig.add_trace(go.Scattergl(
+            y=data['lim_inf'], 
+            x=data[time_col],
+            line=dict(color='red'),
+            opacity=0.45,
+            name='-5%'))
     
     fig.update_xaxes(title_text="Data")
     fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
@@ -113,13 +128,18 @@ def check_residuals(data: pd.DataFrame,
 
     st.plotly_chart(fig, use_container_width=True)
     
-    fig = go.Figure()
-    fig.add_trace(go.Histogram(x=data['residuo']))
+    #fig = go.Figure()
+    fig = px.histogram(data, x="residuo",
+                   marginal="box", # or violin, rug
+                   hover_data=['residuo'])
+ 
+    #fig.add_trace(go.Histogram(x=data['residuo']))
+    fig.update_traces(opacity=0.75)
     fig = format_fig(fig, 'Distribuição dos Resíduos', x_title='Resíduo', y_title='Contagem')
     st.plotly_chart(fig, use_container_width=True)
     
     corr_plot(data['residuo'])
-    corr_plot(data['residuo'], plot_pacf=True)
+    #corr_plot(data['residuo'], plot_pacf=True)
     
 def plot_series(data: pd.DataFrame,
                     time_col: str,
@@ -249,8 +269,6 @@ def create_global_metrics(data, data_group):
     st.plotly_chart(fig, use_container_width=True)
     # Cálculo do Percentual Acima5%
     
-    
-    
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     """Exibe histograma com distribuição dos valores de erro."""
     err_df = pd.merge(test, predictions, left_index=True, right_index=True, how='inner')
@@ -285,7 +303,7 @@ def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     return fig
 
 def corr_plot(series, plot_pacf=False):
-    corr_array = pacf(series.dropna(), alpha=0.05) if plot_pacf else acf(series.dropna(), alpha=0.05)
+    corr_array = pacf(series.dropna(), alpha=0.05) if plot_pacf else acf(series.dropna(), alpha=0.05, nlags=45)
     lower_y = corr_array[1][:,0] - corr_array[0]
     upper_y = corr_array[1][:,1] - corr_array[0]
 

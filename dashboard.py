@@ -14,7 +14,7 @@ def set_streamlit():
 
     return "initializing..."
 
-# NÃO FUNDA AINDA
+# NÃO FUNFA AINDA
 def set_page_container_style(
         max_width: int = 1100, max_width_100_percent: bool = False,
         padding_top: int = 1, padding_right: int = 10, padding_left: int = 1, padding_bottom: int = 10,

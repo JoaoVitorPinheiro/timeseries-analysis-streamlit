@@ -13,6 +13,9 @@ from plotly.subplots import make_subplots
 import streamlit as st
 from typing import List, Any, Dict, Tuple
 from dashboard import * 
+import os
+
+os.environ['TZ'] = 'UTC'
 
 def preprocess_dataframe(data: pd.DataFrame,
                          data_group: str,
@@ -25,7 +28,7 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = pd.to_datetime(data[time_col],format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     data['mape'] = MAPE(data[y_true],data[y_predicted])
-    
+    #data['rmse'] = RMSE(data[y_true],data[y_predicted])
     # Limiar do MAPE para evitar distorções
     data['mape'] = np.where(data['mape']>100, 100,data['mape'])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
@@ -34,71 +37,60 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['lim_sup'] = 1.96
     data['lim_inf'] = -1.96
     data[y_true+'_diff'] = data[y_true].diff()
-    
+       
+    data = data.sort_values(by = time_col, ascending=True)
+    return data
+
+def standard_residual(data, data_group, y_true, y_predicted):
     for item in sorted(data[data_group].unique().tolist()):
         data.loc[data[data_group] == item, 'std_residuo'] = \
             RSE(data.loc[data[data_group] == item, y_true],
                 data.loc[data[data_group] == item, y_predicted])
-            
-    data = data.sort_values(by = time_col, ascending=True)
     return data
 
-def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
-    """Calcula o Erro Médio Percentual Absoluto (MAPE) multiplicado por 100 para percentual
-    Parameters
-    ----------
-    y_true : pd.Series
-        Série de valores observados.
-    y_pred : pd.Series
-        Série de valores previstos.
-    Returns
-    ----------
-    float
-    mape: Mean Absolute Percentage Error (MAPE).
-    """
-    try:
-        residual = y_true - y_predicted
-        mape = np.where(y_true!=0, residual/y_true, np.nan)
-        mape = np.where((residual==0) & (y_predicted==0), 0, mape)
-        #mape = np.where(mape > 0.5, 0.1, mape)
-        return 100*np.abs(mape)
-    except:
-        return 0   
+def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
+    
+    with st.expander("Acima de 5%"):
+        dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+        # Customize aspect
+        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
+                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.3s}%', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+        #fig.update_xaxes(categoryorder='category ascending')
+        fig = format_fig(fig, x_title=data_group, y_title='perc')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with st.expander("MAPE"):
+        dfplot = data.groupby([data_group]).mean().reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot["mape"], text = dfplot["mape"])])
+        # Customize aspect
+        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
+                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.3s}', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+        #fig.update_xaxes(categoryorder='category ascending')
+        fig = format_fig(fig, x_title=data_group, y_title='Percentual')
+        st.plotly_chart(fig, use_container_width=True)
 
-def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
-    """Calcula o Erro Médio Percentual(MPE) multiplicado por 100 para percentual
-    Parameters
-    ----------
-    y_true : pd.Series
-        Série de valores observados.
-    y_pred : pd.Series
-        Série de valores previstos.
-    Returns
-    ----------
-    float
-    mape: Mean Absolute Percentage Error (MAPE).
-    """
-    try:
-        residual = (y_true - y_predicted)
-        mpe = np.where(y_true!=0, residual/y_true, np.nan)
-        mpe = np.where((residual==0) & (y_predicted==0), 0, mpe)
-        mpe = np.where(mpe > 0.5, 0.1, mpe)
-        
-        return mpe*100
-    except:
-        return 0   
-    
-def RSE(y_true, y_predicted):
-    """
-    - y_true: Valores Observados
-    - y_predicted: Valores Previstos
-    """
-    y_true = np.array(y_true)
-    y_predicted = np.array(y_predicted)
-    rss = np.sum(np.square(y_true - y_predicted))
-    rse = math.sqrt(rss / (len(y_true) - 2))
-    return (y_true - y_predicted)/rse
-    
+    # Cálculo do RMSE
+    with st.expander("RMSE*"):
+        dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+        # Customize aspect
+        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
+                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.3s}', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+        #fig.update_xaxes(categoryorder='category ascending')
+        fig = format_fig(fig, x_title=data_group, y_title='rmse')
+        st.plotly_chart(fig, use_container_width=True)
+
+       
 def check_residuals(data: pd.DataFrame,
                     time_col: str,
                     selected: str,
@@ -161,7 +153,7 @@ def check_residuals(data: pd.DataFrame,
     
     corr_plot(data['residuo'])
     #corr_plot(data['residuo'], plot_pacf=True)
-    
+  
 def plot_series(data: pd.DataFrame,
                     time_col: str,
                     y_true: str,
@@ -211,7 +203,6 @@ def plot_series(data: pd.DataFrame,
                     )
                 ),
             )
-    
     fig.update_layout(
                 yaxis_title='Consumo',
                 legend_title_text="",
@@ -224,7 +215,101 @@ def plot_series(data: pd.DataFrame,
         )
     
     st.plotly_chart(fig, use_container_width=True)
+
+def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
+    """Calcula o Erro Médio Percentual Absoluto (MAPE) multiplicado por 100 para percentual
+    Parameters
+    ----------
+    y_true : pd.Series
+        Série de valores observados.
+    y_pred : pd.Series
+        Série de valores previstos.
+    Returns
+    ----------
+    float
+    mape: Mean Absolute Percentage Error (MAPE).
+    """
+    try:
+        residual = y_true - y_predicted
+        mape = np.where(y_true!=0, residual/y_true, np.nan)
+        mape = np.where((residual==0) & (y_predicted==0), 0, mape)
+        #mape = np.where(mape > 0.5, 0.1, mape)
+        return 100*np.abs(mape)
+    except:
+        return 0  
     
+def MSE(y_true: pd.Series, y_pred: pd.Series) -> float:
+    """Computes Mean Squared Error (MSE).
+    Parameters
+    ----------
+    y_true : pd.Series
+        Ground truth target series.
+    y_pred : pd.Series
+        Prediction series.
+    Returns
+    -------
+    float
+        Mean Squared Error (MSE).
+    """
+    try:
+        y_true, y_pred = np.array(y_true).ravel(), np.array(y_pred).ravel()
+        mask = (~np.isnan(y_true)) & (~np.isnan(y_pred))
+        mse = ((y_true - y_pred) ** 2)[mask].mean()
+        return 0 if np.isnan(mse) else float(mse)
+    except:
+        return 0  
+    
+def RMSE(y_true: pd.Series, y_pred: pd.Series) -> float:
+    """Computes Root Mean Squared Error (RMSE).
+    Parameters
+    ----------
+    y_true : pd.Series
+        Ground truth target series.
+    y_pred : pd.Series
+        Prediction series.
+    Returns
+    -------
+    float
+        Root Mean Squared Error (RMSE).
+    """
+    y_true, y_pred = np.array(y_true).ravel(), np.array(y_pred).ravel()
+    rmse = np.sqrt(MSE(y_true, y_pred))
+    return float(rmse)
+
+def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
+    """Calcula o Erro Médio Percentual(MPE) multiplicado por 100 para percentual
+    Parameters
+    ----------
+    y_true : pd.Series
+        Série de valores observados.
+    y_pred : pd.Series
+        Série de valores previstos.
+    Returns
+    ----------
+    float
+    mape: Mean Absolute Percentage Error (MAPE).
+    """
+    try:
+        residual = (y_true - y_predicted)
+        mpe = np.where(y_true!=0, residual/y_true, np.nan)
+        mpe = np.where((residual==0) & (y_predicted==0), 0, mpe)
+        mpe = np.where(mpe > 0.5, 0.1, mpe)
+        
+        return mpe*100
+    except:
+        return 0   
+    
+def RSE(y_true, y_predicted):
+    """
+    - y_true: Valores Observados
+    - y_predicted: Valores Previstos
+    """
+    y_true = np.array(y_true)
+    y_predicted = np.array(y_predicted)
+    rss = np.sum(np.square(y_true - y_predicted))
+    rse = math.sqrt(rss / (len(y_true) - 2))
+    return (y_true - y_predicted)/rse
+ 
 def plot_daily_error(df, predictions, test, city_gate, limit=5):
     """Exibe gráfico com desvio percentual diário para cada predição realizada."""
     # Calculando PCS médio por city gate
@@ -273,23 +358,6 @@ def plot_daily_error(df, predictions, test, city_gate, limit=5):
     fig.add_hline(y=-limit, line_color='gray', line_dash='dash')
     
     return fig
-
-def create_global_metrics(data, data_group):
-    
-    # Cálculo do MAPE
-    data = data.groupby([data_group]).mean().reset_index()
-    fig = go.Figure(data=[go.Bar(x=data[data_group].unique().tolist(),
-                                 y=data["mape"], text = data["mape"])])
-    # Customize aspect
-    fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
-                  marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.3s}', textposition='outside')
-    fig.update_layout(title_text='MAPE', hovermode='x')          
-    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-    #fig.update_xaxes(categoryorder='category ascending')
-    fig = format_fig(fig, 'MAPE', x_title=data_group, y_title='Percentual')
-    st.plotly_chart(fig, use_container_width=True)
-    # Cálculo do RMSE
-    # Cálculo do Percentual Acima5%
     
 def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
     """Exibe histograma com distribuição dos valores de erro."""
@@ -340,7 +408,7 @@ def corr_plot(series, plot_pacf=False):
     fig.update_traces(showlegend=False)
     fig.update_xaxes(title_text="Lags", range=[-1, len(corr_array[0])])
     fig.update_yaxes(showgrid=False, zerolinecolor='#000000')
-    
+
     title='Partial Autocorrelation (PACF)' if plot_pacf else 'Autocorrelation (ACF)'
     fig = format_fig(fig, title_text = title, x_title = 'Lags', y_title='Corr')
     #fig.update_layout(title=title)

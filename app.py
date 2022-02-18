@@ -6,7 +6,7 @@ def main():
     st.sidebar.title("Navegação")
     choice = st.sidebar.radio(
      "",
-     ('Métricas Globais', 'Análise de Resíduos', 'Documentary'))
+     ('Métricas Globais', 'Análise de Resíduos', 'Decision'))
     
     with st.expander("Sobre"):
         st.markdown("""
@@ -42,17 +42,17 @@ def main():
                                     y_predicted)
         
     try:
-        st.sidebar.subheader('Recorte Temporal:')
-        start_date, end_date = st.sidebar.slider('',
+        st.subheader('Intervalo:')
+        start_date, end_date = st.slider('',
                             value=[df[time_col].min(), df[time_col].max()],
                             key='first')
 
         if start_date <= end_date:
             pass
         else:
-            st.sidebar.warning('Error: Fim < Inicio.')
+            st.warning('Error: Fim < Inicio.')
 
-        st.sidebar.write('Período:', start_date, '-', end_date)
+        st.write('Período:', start_date, '-', end_date)
         mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
         df = df.loc[mask]
         df = preprocess_dataframe(df,
@@ -70,22 +70,17 @@ def main():
             except:
                 st.warning("Sem arquivo")
         try:
-            create_global_metrics(df, data_group)   
+            create_global_metrics(df, data_group, y_true, y_predicted)   
         except:
             st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
-    
+            
     elif choice == 'Análise de Resíduos':    
         try:
-            #selected = st.selectbox(f"Selecione o {data_group}:",
-            #                        sorted(df[data_group].unique().tolist()))'''
-            selected = st.select_slider(
-                f"Selecione o {data_group}:",
-                options=sorted(df[data_group].unique().tolist()))
+            selected = st.selectbox(f"Selecione o {data_group}:",
+                                    sorted(df[data_group].unique().tolist()))
         except: 
             pass      
-                
         try:
-            
             metrica = df[df[data_group]==selected].mape.mean()
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
             perc_acima5 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
@@ -112,21 +107,24 @@ def main():
                     selected,
                     period = 'D',
                     diff = 0)
-            
         except:
             pass
         
         try:   
+            df = standard_residual(df, data_group, y_true, y_predicted)
+        except: 
+            st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
+        try:   
             st.header("2. Propriedades dos Resíduos")
             standardize = st.checkbox('Resíduo Padronizado')
             check_residuals(df,
-                        time_col,
-                        selected,
-                        data_group,
-                        standardize=standardize)
-        except: 
-            pass
-        
+                    time_col,
+                    selected,
+                    data_group,
+                    standardize)
+        except:
+            st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
+    
 if __name__ == "__main__":
     set_streamlit()
     set_page_container_style()

@@ -62,10 +62,15 @@ def format_fig(target_fig,
                 #title_text=title_text,
                 title_x=0.5,
                 title_y=1,
-                hovermode="x"
+                hovermode="x",
+                hoverlabel=dict(
+                bgcolor="white",
+                font_size=16,
+                font_family="Rockwell"
                 #paper_bgcolor='rgba(0,0,0,0)',
                 #plot_bgcolor='rgba(0,0,0,0)
-        )
+                )
+    )
         return target_fig
     
 def show_results():

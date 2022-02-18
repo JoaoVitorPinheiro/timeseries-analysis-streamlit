@@ -1,6 +1,9 @@
 from cmath import e
 from analysis import *
 from dashboard import *
+import os
+
+os.environ['TZ'] = 'UTC'
 
 def main():
     st.sidebar.title("Navegação")

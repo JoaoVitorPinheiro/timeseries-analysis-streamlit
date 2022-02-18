@@ -13,9 +13,6 @@ from plotly.subplots import make_subplots
 import streamlit as st
 from typing import List, Any, Dict, Tuple
 from dashboard import * 
-import os
-
-os.environ['TZ'] = 'UTC'
 
 def preprocess_dataframe(data: pd.DataFrame,
                          data_group: str,

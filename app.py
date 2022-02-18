@@ -4,12 +4,12 @@ from dashboard import *
 import os
 
 os.environ['TZ'] = 'UTC'
-
+MENU = ['Métricas Globais', 'Análise de Resíduos', 'Análise Comparativa']
 def main():
     st.sidebar.title("Navegação")
     choice = st.sidebar.radio(
      "",
-     ('Métricas Globais', 'Análise de Resíduos', 'Decision'))
+     ('Métricas Globais', 'Análise de Resíduos', 'Análise Comparativa'))
     
     with st.expander("Sobre"):
         st.markdown("""
@@ -98,7 +98,7 @@ def main():
                         value=f"{round(metrica,2)}%",
                         delta=f"{delta2}%",
                         delta_color="inverse")
-            col3.metric(label="Acima de 5%",
+            col3.metric(label="Dias Acima de 5%",
                         value=f"{round(100*perc_acima5,2)}%",
                         delta="")
             
@@ -118,16 +118,31 @@ def main():
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
         try:   
-            st.header("2. Propriedades dos Resíduos")
-            standardize = st.checkbox('Resíduo Padronizado')
+            st.subheader("Propriedades dos Resíduos")
+            
             check_residuals(df,
                     time_col,
                     selected,
-                    data_group,
-                    standardize)
+                    data_group
+                    )  
+            check_seasonal_residuals(df,
+                    time_col,
+                    selected,
+                    data_group
+                    ) 
+            check_holidays(df,
+                    time_col,
+                    selected,
+                    data_group
+                ) 
+    
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
-    
+        
+    elif choice == 'Análise Comparativa':
+    # Recebe o modelo 2
+    # Abre uma janela para leitura de dados
+        pass     
 if __name__ == "__main__":
     set_streamlit()
     set_page_container_style()

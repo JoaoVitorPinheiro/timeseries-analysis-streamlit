@@ -1,15 +1,14 @@
-from cmath import e
 from analysis import *
 from dashboard import *
 import os
 
 os.environ['TZ'] = 'UTC'
-MENU = ['Métricas Globais', 'Análise de Resíduos', 'Análise Comparativa']
+MENU = ['Métricas Globais', 'Análise de Resíduos', 'Benchmark']
+
 def main():
     st.sidebar.title("Navegação")
     choice = st.sidebar.radio(
-     "",
-     ('Métricas Globais', 'Análise de Resíduos', 'Análise Comparativa'))
+     "", MENU)
     
     with st.expander("Sobre"):
         st.markdown("""
@@ -33,16 +32,22 @@ def main():
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
                 
-            data_group = st.selectbox("Selecione o grupo:", df.columns)
-            time_col = st.selectbox("Selecione a coluna temporal:", df.columns)
-            y_true = st.selectbox("Selecione a série real:", df.columns)
-            y_predicted = st.selectbox("Selecione a série prevista:", df.columns)
+            data_group = st.selectbox("1° Grupo:", df.columns)
+            time_col = st.selectbox("Coluna Temporal:", df.columns)
+            y_true = st.selectbox("Série Real:", df.columns)
+            y_predicted = st.selectbox("Série Prevista:", df.columns)
+            data_group2 = st.selectbox("Agrupamento:", df.columns)
+            chosen_group = st.selectbox(f"Selecione o agrupamento:",
+                                    sorted(df[data_group2].unique().tolist()))
             
-            df = preprocess_dataframe(df,
-                                    data_group,
+            try:
+                df = df[df[data_group2]==chosen_group]
+                df = preprocess_dataframe(df,
                                     time_col,
                                     y_true,
                                     y_predicted)
+            except:
+                pass
         
     try:
         st.subheader('Intervalo:')
@@ -58,11 +63,16 @@ def main():
         st.write('Período:', start_date, '-', end_date)
         mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
         df = df.loc[mask]
-        df = preprocess_dataframe(df,
-                                data_group,
-                                time_col,
-                                y_true,
-                                y_predicted)
+        
+        try:
+            #df = df[df[data_group2]==chosen_group]
+            df = preprocess_dataframe(df,
+                                    time_col,
+                                    y_true,
+                                    y_predicted)
+        except:
+            pass
+        
     except:
         pass
     
@@ -108,6 +118,7 @@ def main():
                     y_predicted,
                     data_group,
                     selected,
+                    
                     period = 'D',
                     diff = 0)
         except:
@@ -139,7 +150,7 @@ def main():
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
         
-    elif choice == 'Análise Comparativa':
+    elif choice == 'Benchmark':
     # Recebe o modelo 2
     # Abre uma janela para leitura de dados
         pass     

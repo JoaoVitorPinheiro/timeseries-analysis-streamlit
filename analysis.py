@@ -27,26 +27,27 @@ nomear_dia = lambda x: WEEKDAY[x]
 nomear_mes = lambda x: MESES[x-1]
 
 def preprocess_dataframe(data: pd.DataFrame,
-                         data_group: str,
                          time_col: str,
                          y_true: str,
                          y_predicted: str,
                          ) -> pd.DataFrame:
     
     # Timestamp errado
+    
     data[time_col] = pd.to_datetime(data[time_col], format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
+    data = data.dropna()
     data['mape'] = MAPE(data[y_true],data[y_predicted])
     #data['rmse'] = RMSE(data[y_true],data[y_predicted])
     # Limiar do MAPE para evitar distorções
-    data['mape'] = np.where(data['mape']>100, 100,data['mape'])
+    data['mape'] = np.where(data['mape']>100, 100, data['mape'])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
     data['lim_sup'] = 1.96
     data['lim_inf'] = -1.96
     data[y_true+'_diff'] = data[y_true].diff()
-       
+    
     data = data.sort_values(by = time_col, ascending=True)
     return data
 
@@ -197,8 +198,6 @@ def check_seasonal_residuals(data: pd.DataFrame,
         fig.update_traces(quartilemethod="exclusive")
         st.plotly_chart(fig, use_container_width=True)
     
-    return
-
 def check_holidays(data: pd.DataFrame,
                     time_col: str,
                     selected: str,

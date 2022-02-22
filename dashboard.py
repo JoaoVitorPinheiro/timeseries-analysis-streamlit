@@ -1,4 +1,5 @@
 import streamlit as st
+from analysis import *
 import os
    
 PLOT_HEIGHT = 500
@@ -11,7 +12,6 @@ def set_streamlit():
     page_title = "Análise do Forecast",
     page_icon = "📈",
     layout="wide",)
-
     return "initializing..."
 
 # NÃO FUNFA AINDA
@@ -73,36 +73,7 @@ def format_fig(target_fig,
     )
         return target_fig
     
-def show_results():
-    pass
-    
-def initialize_info():
-    pass
-
 def open_streamlit():
     # tests
     os.system('streamlit run app.py')
     return 
-
-def display_titles(repo_link = 'Olá Mundo', article_link = 'Olá Mundo') -> None:
-    """Displays an repository and app links.
-    Parameters
-    ----------
-    repo_link : str
-        Link of git repository.
-    article_link : str
-        Link of medium article.
-    """
-    col1, col2 = st.sidebar.columns(2)
-    col1.markdown(
-        f"<a style='display: block; text-align: center;' href={repo_link}>Source code</a>",
-        unsafe_allow_html=True,
-    )
-    col2.markdown(
-        f"<a style='display: block; text-align: center;' href={article_link}>App introduction</a>",
-        unsafe_allow_html=True,
-    )
-    st.sidebar.markdown(
-        f'<div style="text-align: center"> (Open in a new tab) </div>',
-        unsafe_allow_html=True,
-    )

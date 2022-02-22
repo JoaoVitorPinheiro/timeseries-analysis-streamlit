@@ -23,13 +23,13 @@ def main():
     
     with st.sidebar.expander("Leitura de arquivo"):    
 
-        st.session_state.data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
-        if st.session_state.data_file is not None:
-            file_details = {"nome do arquivo":st.session_state.data_file.name,
-                    "tipo do arquivo":st.session_state.data_file.type,
-                    "tamanho do arquivo":st.session_state.data_file.size}
+        data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
+        if data_file is not None:
+            file_details = {"nome do arquivo":data_file.name,
+                    "tipo do arquivo":data_file.type,
+                    "tamanho do arquivo":data_file.size}
 
-            df = pd.read_csv(st.session_state.data_file, parse_dates=True)
+            df = pd.read_csv(data_file, parse_dates=True)
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
         

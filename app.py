@@ -24,6 +24,7 @@ def main():
     with st.sidebar.expander("Leitura de arquivo"):    
 
         data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
+        
         if data_file is not None:
             file_details = {"nome do arquivo":data_file.name,
                     "tipo do arquivo":data_file.type,
@@ -52,11 +53,15 @@ def main():
                                     y_predicted)
             except:
                 pass
-    
+        else:
+            st.warning('Erro ao carregar arquivo')
+            
     try:
         st.subheader('Intervalo:')
         start_date, end_date = st.slider('',
                             value=[df[time_col].min(), df[time_col].max()],
+                            max_value = df[time_col].max(),
+                            min_value = df[time_col].min(),
                             key='first')
 
         if start_date <= end_date:

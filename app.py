@@ -24,7 +24,6 @@ def main():
     with st.sidebar.expander("Leitura de arquivo"):    
 
         data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
-        
         if data_file is not None:
             file_details = {"nome do arquivo":data_file.name,
                     "tipo do arquivo":data_file.type,
@@ -38,21 +37,22 @@ def main():
             time_col = st.selectbox("Coluna Temporal:", df.columns)
             y_true = st.selectbox("Série Real:", df.columns)
             y_predicted = st.selectbox("Série Prevista:", df.columns)
+            #classes = st.multiselect("Classes:", df.columns)
             data_group2 = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
-            
+            df['NÃO'] = 0
             grouped = df[[data_group, data_group2, time_col, y_true, y_predicted]]
             
             if data_group2 != 'NÃO':
-                
                 chosen_group = st.selectbox(f"Selecione o agrupamento:",
                                 sorted(df[data_group2].unique().tolist()))
                 df = df[df[data_group2]==chosen_group]  
-
+                
             try:
                 df = preprocess_dataframe(df,
                                     time_col,
                                     y_true,
                                     y_predicted)
+                
             except:
                 pass
         else:

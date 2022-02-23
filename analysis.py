@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 from statsmodels.tsa.stattools import pacf, acf
 import statsmodels.api as sm
@@ -39,7 +40,7 @@ def load_csv_file():
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
         
-            data_group = st.selectbox("1° Grupo:", df.columns)
+            data_group = st.selectbox("Chave ID:", df.columns)
             time_col = st.selectbox("Coluna Temporal:", df.columns)
             y_true = st.selectbox("Série Real:", df.columns)
             y_predicted = st.selectbox("Série Prevista:", df.columns)
@@ -76,8 +77,8 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
-    data['lim_sup'] = 1.96
-    data['lim_inf'] = -1.96
+    #data['lim_sup'] = 1.96
+    #data['lim_inf'] = -1.96
     data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     return data
@@ -91,13 +92,14 @@ def standard_residual(data, data_group, y_true, y_predicted):
 
 def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
     
-    #st.markdown("""
-    #        <marquee style='width: 100%; color: rgb(234, 82, 111);'><b> <font size="5">Dias Acima de 5%</b></font></marquee>""",
+    #categories = data.groupby([data_group]).unique().tolist()
+    #st.markdown(f"""
+    #        <marquee style='width: 100%; color: rgb(234, 82, 111);'><b> <font size="5">{categories}.</b></font></marquee>""",
     #unsafe_allow_html = True)
     
     #DIAS ACIMA DE 5%
     st.markdown("""
-            <span style="color:rgb(234, 82, 111)"> <font size="5">DIAS ACIMA DE 5%</font></span>""",
+            <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
     unsafe_allow_html = True)
     dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
     fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
@@ -114,7 +116,7 @@ def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
     
     #MAPE
     st.markdown("""
-            <span style="color:rgb(110, 68, 255)"> <font size="5">MAPE</font></span>""",
+            <span style="color:rgb(110, 68, 255)"><font size="5">MAPE</font></span>""",
     unsafe_allow_html = True)
     dfplot = data.groupby([data_group]).mean().reset_index()
     fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
@@ -130,7 +132,7 @@ def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
 
     #RMSE
     st.markdown("""
-            <span style="color:rgb(37, 206, 209)"> <font size="5">RMSE</font></span>""",
+            <span style="color:rgb(37, 206, 209)"><font size="5">RMSE</font></span>""",
     unsafe_allow_html = True)
     dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
     fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
@@ -149,30 +151,35 @@ def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_
     categories = sorted(data[data_group].unique().tolist())
     groups = sorted(data[data_group2].unique().tolist())
     
-    st.markdown("""
-            <span style="color:rgb(32,4,114)"> <font size="5">MAPE</font></span>""",
-    unsafe_allow_html = True)
-    
+    options = st.multiselect(
+     'Adicione os Itens:',
+    categories)
+
+    chosen_metric=st.selectbox('Métrica', ['MAPE', 'ACIMA5'])
+    #st.markdown("""
+    #        <span style="color:rgb(32,4,114)"> <font size="5">MAPE</font></span>""",
+    #unsafe_allow_html = True)
     fig = go.Figure()
-    
     for group in groups:
         
         dfplot = data[data[data_group2]==group]
         dfplot = preprocess_dataframe(dfplot, time_col, y_true, y_predicted)
-        values = dfplot.groupby([data_group]).mape.mean()
+        
+        if chosen_metric=='MAPE':
+            values = dfplot.groupby([data_group]).mape.mean()
+        else:
+            values = dfplot.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count())
         
         fig.add_trace(go.Scatterpolar(
             r=values,
-            theta=categories,
-
+            theta=sorted(options),
             fill='toself',
-            #opacity=0.55,
+            opacity=0.65,
             mode = 'lines+markers',
             name=group
         ))
-
     fig.update_layout(
-        #template="plotly_dark",
+        template="plotly_white",
         polar=dict(
             radialaxis=dict(
             visible=True,
@@ -196,6 +203,8 @@ def check_residuals(data: pd.DataFrame,
         standardize = st.checkbox('Resíduo Padronizado')
         fig = go.Figure()
         if standardize:
+            data['lim_sup'] = 1.96
+            data['lim_inf'] = -1*data['lim_sup']
             fig.add_trace(go.Scatter(x=data[time_col],
                                 y=data['std_residuo'],
                                 mode='lines',
@@ -229,20 +238,51 @@ def check_residuals(data: pd.DataFrame,
             
         fig.update_xaxes(title_text="Data")
         fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
-        fig = format_fig(fig, 'Série dos Resíduos', x_title=time_col, y_title='Resíduo')
+        fig = format_fig(fig, '', x_title=time_col, y_title='Resíduo')
         st.plotly_chart(fig, use_container_width=True)
-    
-    #fig = go.Figure()
+
+        fig = go.Figure()
+        data['lim_sup'] = 5
+        data['lim_inf'] = -1*data['lim_sup']
+
+        fig.add_trace(go.Scattergl(x=data[time_col],
+                                    y=data['mpe'],
+                                    mode='markers',
+                                    line=dict(color='rgb(32,4,114)'),
+                                    name='MPE'))
+        
+        fig.add_trace(go.Scattergl(
+                    y=data['lim_sup'], 
+                    x=data[time_col],
+                    line=dict(color='red', dash = 'dash'),
+                    name='+5%'))
+
+        fig.add_trace(go.Scattergl(
+                    y=data['lim_inf'], 
+                    x=data[time_col],
+                    line=dict(color='red', dash = 'dash'),
+                    name='-5%'))
+
+        fig.update_xaxes(title_text="Data")
+        fig.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
+        fig = format_fig(fig, '', x_title=time_col, y_title='Erro Médio Percentual')
+        st.plotly_chart(fig, use_container_width=True)
+        
     with st.expander("Distribuição"):
-        fig = px.histogram(data, x="residuo",
-                    marginal="box", # or violin, rug
-                    hover_data=['residuo'])
+        #fig = px.histogram(data, x="residuo",
+        #            marginal="box", # or violin, rug
+        #            hover_data=['residuo'])
     
-        #fig.add_trace(go.Histogram(x=data['residuo']))
-        fig.update_traces(opacity=0.75)
-        fig = format_fig(fig, 'Distribuição dos Resíduos', x_title='Resíduo', y_title='Contagem')
+        #fig.update_traces(opacity=0.75)
+        #fig = format_fig(fig, 'Distribuição dos Resíduos', x_title='Resíduo', y_title='Contagem')
+        #st.plotly_chart(fig, use_container_width=True)
+
+        fig = ff.create_distplot([data['residuo']], ['residuo'],
+                                 show_hist=False, 
+                                 colors=['rgb(32,4,114)'])
+        fig.add_vline(x=2.5, line_width=1, line_dash="dash", line_color="red")
         st.plotly_chart(fig, use_container_width=True)
-    
+        
     with st.expander("Função de Autocorrelação"):
         p_acf = st.checkbox('Autocorrelação Parcial')
         corr_plot(data['residuo'], plot_pacf = p_acf)
@@ -306,14 +346,18 @@ def plot_series(data: pd.DataFrame,
     """
     
     plot_df = data[data[data_group] == selected].copy()
-    
-    fig = px.line(plot_df,
-                    x=time_col,
-                    y=[y_true, y_predicted],
-                    # color_discrete_sequence=style["colors"][1:],
-                    hover_data={"variable": True, "value": ":.1f", time_col: False},
-                )
-    
+    fig = go.Figure(data=go.Scatter(x=plot_df[time_col],
+                                    y=plot_df[y_true],
+                                    mode='lines',
+                                    name='Real',
+                                    line_color='rgb(32,4,114)')
+                    )
+    fig.add_trace(go.Scatter(x=plot_df[time_col],
+                             y=plot_df[y_predicted],
+                             mode='lines',
+                             name='Previsto',
+                             line_color='rgb(234, 82, 111)')
+                  )
     fig.update_xaxes(
                 rangeslider_visible=True,
                 rangeselector=dict(

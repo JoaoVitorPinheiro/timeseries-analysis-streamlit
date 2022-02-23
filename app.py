@@ -9,7 +9,7 @@ def main():
     st.sidebar.title("Navegação")
     choice = st.sidebar.radio(
      "", MENU)
-    
+
     with st.expander("Sobre"):
         st.markdown("""
             ####
@@ -20,7 +20,7 @@ def main():
                 - Função de Autocorrelação dos resíduos
             ######""",
     unsafe_allow_html = True)
-    
+
     with st.sidebar.expander("Leitura de arquivo"):    
 
         data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
@@ -41,18 +41,17 @@ def main():
             data_group2 = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
             df['NÃO'] = 0
             grouped = df[[data_group, data_group2, time_col, y_true, y_predicted]]
-            
-            if data_group2 != 'NÃO':
-                chosen_group = st.selectbox(f"Selecione o agrupamento:",
-                                sorted(df[data_group2].unique().tolist()))
-                df = df[df[data_group2]==chosen_group]  
+
+            #if data_group2 != 'NÃO':
+            chosen_group = st.selectbox(f"Selecione o agrupamento:",
+                            sorted(df[data_group2].unique().tolist()))
+            df = df[df[data_group2]==chosen_group]  
                 
             try:
                 df = preprocess_dataframe(df,
                                     time_col,
                                     y_true,
                                     y_predicted)
-                
             except:
                 pass
         else:
@@ -65,7 +64,7 @@ def main():
                             max_value = df[time_col].max(),
                             min_value = df[time_col].min(),
                             key='first')
-
+        
         if start_date <= end_date:
             pass
         else:
@@ -94,11 +93,11 @@ def main():
                 st.dataframe(df)
             except:
                 st.warning("Sem arquivo")
-        try:
-            st.subheader(f'Métricas para o agrupamento: {chosen_group}')
-            create_global_metrics(df, data_group, y_true, y_predicted)   
-        except:
-            st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+        #try:
+        st.subheader(f'Métricas para o agrupamento: {chosen_group}')
+        create_global_metrics(df, data_group, y_true, y_predicted)   
+        #except:
+        #    st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
 
     ########################################## TELA 2 ##########################################
     elif choice == 'Agrupamentos':

@@ -3,7 +3,7 @@ from dashboard import *
 import os
 
 os.environ['TZ'] = 'UTC'
-MENU = ['Métricas Globais', 'Análise de Resíduos', 'Benchmark']
+MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos', 'Benchmark']
 
 def main():
     st.sidebar.title("Navegação")
@@ -33,12 +33,14 @@ def main():
             df = pd.read_csv(data_file, parse_dates=True)
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
-        
+
             data_group = st.selectbox("1° Grupo:", df.columns)
             time_col = st.selectbox("Coluna Temporal:", df.columns)
             y_true = st.selectbox("Série Real:", df.columns)
             y_predicted = st.selectbox("Série Prevista:", df.columns)
             data_group2 = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
+            
+            grouped = df[[data_group, data_group2, time_col, y_true, y_predicted]]
             
             if data_group2 != 'NÃO':
                 
@@ -93,11 +95,20 @@ def main():
             except:
                 st.warning("Sem arquivo")
         try:
+            st.subheader(f'Métricas para o agrupamento: {chosen_group}')
             create_global_metrics(df, data_group, y_true, y_predicted)   
         except:
             st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
 
     ########################################## TELA 2 ##########################################
+    elif choice == 'Agrupamentos':
+        st.subheader(f'Comparação dos agrupamentos')
+        try:
+            create_grouped_radar(grouped, data_group, data_group2, time_col, y_true, y_predicted) 
+        except:
+            st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+            
+    ########################################## TELA 3 ##########################################
     elif choice == 'Análise de Resíduos':    
         try:
             selected = st.selectbox(f"Selecione o {data_group}:",
@@ -157,7 +168,7 @@ def main():
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
     
-    ########################################## TELA 3 ##########################################
+    ########################################## TELA 4 ##########################################
     elif choice == 'Benchmark':
     # Recebe o modelo 2
     # Abre uma janela para leitura de dados

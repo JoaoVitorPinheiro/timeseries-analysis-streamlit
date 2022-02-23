@@ -66,7 +66,6 @@ def preprocess_dataframe(data: pd.DataFrame,
                          ) -> pd.DataFrame:
     
     # Timestamp errado
-    
     data[time_col] = pd.to_datetime(data[time_col], format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     data = data.dropna()
@@ -80,7 +79,6 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['lim_sup'] = 1.96
     data['lim_inf'] = -1.96
     data[y_true+'_diff'] = data[y_true].diff()
-    
     data = data.sort_values(by = time_col, ascending=True)
     return data
 
@@ -93,48 +91,96 @@ def standard_residual(data, data_group, y_true, y_predicted):
 
 def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
     
-    with st.expander("Acima de 5%"):
-        dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
-        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
-        # Customize aspect
-        fig.update_xaxes(tickangle=-45)
-        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
-                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.1f}', textposition='outside')
-        fig.update_layout(hovermode='x')          
-        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-        #fig.update_xaxes(categoryorder='category ascending')
-        fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
-        st.plotly_chart(fig, use_container_width=True)
+    #st.markdown("""
+    #        <marquee style='width: 100%; color: rgb(234, 82, 111);'><b> <font size="5">Dias Acima de 5%</b></font></marquee>""",
+    #unsafe_allow_html = True)
     
-    with st.expander("MAPE"):
-        dfplot = data.groupby([data_group]).mean().reset_index()
-        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                    y=dfplot["mape"], text =  dfplot["mape"])])
-        # Customize aspect
-        fig.update_xaxes(tickangle=-45)
-        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
-                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.1f}', textposition='outside',hoverinfo='skip')
-        fig.update_layout(hovermode='x')          
-        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-        #fig.update_xaxes(categoryorder='category ascending')
-        fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
-        st.plotly_chart(fig, use_container_width=True)
+    #DIAS ACIMA DE 5%
+    st.markdown("""
+            <span style="color:rgb(234, 82, 111)"> <font size="5">DIAS ACIMA DE 5%</font></span>""",
+    unsafe_allow_html = True)
+    dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
+    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+    # Customize aspect
+    fig.update_xaxes(tickangle=-45)
+    fig.update_traces(marker_color='rgb(234, 82, 111)', marker_line_color='rgb(0, 0, 0)',
+                marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.1f}', textposition='outside')
+    fig.update_layout(hovermode='x')          
+    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    #fig.update_xaxes(categoryorder='category ascending')
+    fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    #MAPE
+    st.markdown("""
+            <span style="color:rgb(110, 68, 255)"> <font size="5">MAPE</font></span>""",
+    unsafe_allow_html = True)
+    dfplot = data.groupby([data_group]).mean().reset_index()
+    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                y=dfplot["mape"])])
+    # Customize aspect
+    fig.update_xaxes(tickangle=-45)
+    fig.update_traces(marker_color='rgb(110, 68, 255)', marker_line_color='rgb(0, 0, 0)',
+                marker_line_width=1.5, opacity=0.75,
+                texttemplate='%{y:.1f}', textposition='outside')
+    fig.update_layout(hovermode='x')          
+    fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+    st.plotly_chart(fig, use_container_width=True)
 
-    # Cálculo do RMSE
-    with st.expander("RMSE*"):
-        dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
-        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
-        # Customize aspect
-        fig.update_xaxes(tickangle=-45)
-        fig.update_traces(marker_color='rgb(32,4,114)', marker_line_color='rgb(157, 0, 25)',
-                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.0f}', textposition='outside')
-        fig.update_layout(hovermode='x')          
-        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-        #fig.update_xaxes(categoryorder='category ascending')
-        fig = format_fig(fig, x_title=data_group, y_title='rmse')
-        st.plotly_chart(fig, use_container_width=True)
+    #RMSE
+    st.markdown("""
+            <span style="color:rgb(37, 206, 209)"> <font size="5">RMSE</font></span>""",
+    unsafe_allow_html = True)
+    dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
+    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+    # Customize aspect
+    fig.update_xaxes(tickangle=-45)
+    fig.update_traces(marker_color='rgb(37, 206, 209)', marker_line_color='rgb(0, 0, 0)',
+                marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.0f}', textposition='outside')
+    fig.update_layout(hovermode='x')          
+    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    #fig.update_xaxes(categoryorder='category ascending')
+    fig = format_fig(fig, x_title=data_group, y_title='rmse')
+    st.plotly_chart(fig, use_container_width=True)
+
+def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_predicted:str):
+    categories = sorted(data[data_group].unique().tolist())
+    groups = sorted(data[data_group2].unique().tolist())
+    
+    st.markdown("""
+            <span style="color:rgb(32,4,114)"> <font size="5">MAPE</font></span>""",
+    unsafe_allow_html = True)
+    
+    fig = go.Figure()
+    
+    for group in groups:
+        
+        dfplot = data[data[data_group2]==group]
+        dfplot = preprocess_dataframe(dfplot, time_col, y_true, y_predicted)
+        values = dfplot.groupby([data_group]).mape.mean()
+        
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=categories,
+
+            fill='toself',
+            #opacity=0.55,
+            mode = 'lines+markers',
+            name=group
+        ))
+
+    fig.update_layout(
+        #template="plotly_dark",
+        polar=dict(
+            radialaxis=dict(
+            visible=True,
+        )),
+    showlegend=True,
+    height=750, width=750,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 def check_residuals(data: pd.DataFrame,
                     time_col: str,
@@ -200,8 +246,6 @@ def check_residuals(data: pd.DataFrame,
     with st.expander("Função de Autocorrelação"):
         p_acf = st.checkbox('Autocorrelação Parcial')
         corr_plot(data['residuo'], plot_pacf = p_acf)
-
-    #corr_plot(data['residuo'], plot_pacf=True)
 
 def check_seasonal_residuals(data: pd.DataFrame,
                     time_col: str,
@@ -296,7 +340,6 @@ def plot_series(data: pd.DataFrame,
                 title_y=1,
                 hovermode="x unified"
         )
-    
     st.plotly_chart(fig, use_container_width=True)
 
 def corr_plot(series, plot_pacf=False):
@@ -320,6 +363,3 @@ def corr_plot(series, plot_pacf=False):
     fig = format_fig(fig, title_text = title, x_title = 'Lags', y_title='Corr')
     
     st.plotly_chart(fig, use_container_width=True)
-    
-
-    

@@ -97,11 +97,12 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
     #        <marquee style='width: 100%; color: rgb(234, 82, 111);'><b> <font size="5">{categories}.</b></font></marquee>""",
     #unsafe_allow_html = True)
     
+    st.markdown("""
+                <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
+        unsafe_allow_html = True)
     #DIAS ACIMA DE 5%
-    with st.expander("DIAS ACIMA DE 5%"):
-        #st.markdown("""
-        #        <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
-        #unsafe_allow_html = True)
+    with st.expander("..."):
+
         st.subheader(data_group)
         dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
@@ -136,12 +137,12 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
             fig.update_layout(hovermode='x')          
             fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
             st.plotly_chart(fig, use_container_width=True)
-    
-    with st.expander("MAPE"):
-    #MAPE
-        #st.markdown("""
-        #        <span style="color:rgb(110, 68, 255)"><font size="5">MAPE</font></span>""",
-        #unsafe_allow_html = True)
+            
+    st.markdown("""
+                <span style="color:rgb(110, 68, 255)"><font size="5">MAPE</font></span>""",
+        unsafe_allow_html = True)
+    with st.expander("..."):
+        #MAPE
         st.subheader(data_group)
         dfplot = data.groupby([data_group]).mean().reset_index()
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
@@ -175,12 +176,13 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
             fig.update_layout(hovermode='x')          
             fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
             st.plotly_chart(fig, use_container_width=True)
+            
+    st.markdown("""
+            <span style="color:rgb(37, 206, 209)"><font size="5">RMSE</font></span>""",
+    unsafe_allow_html = True)
     
-    with st.expander("RMSE"):
-    #RMSE
-    #st.markdown("""
-    #        <span style="color:rgb(37, 206, 209)"><font size="5">RMSE</font></span>""",
-    #unsafe_allow_html = True)
+    with st.expander("..."):
+        #RMSE
         dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
                                     y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])

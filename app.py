@@ -10,16 +10,16 @@ def main():
     choice = st.sidebar.radio(
      "", MENU)
 
-    with st.expander("Sobre"):
-        st.markdown("""
-            ####
-                Análise de performance de modelos de previsão de séries temporais
-            ###### Features
-                - MAPE e RMSE dos modelos
-                - Histogramas e Boxplots dos resíduos
-                - Função de Autocorrelação dos resíduos
-            ######""",
-    unsafe_allow_html = True)
+    #with st.expander("Sobre"):
+    #    st.markdown("""
+    #        ####
+    #            Análise de performance de modelos de previsão de séries temporais
+    #        ###### Features
+    #            - MAPE e RMSE dos modelos
+    #            - Histogramas e Boxplots dos resíduos
+    #            - Função de Autocorrelação dos resíduos
+    #        ######""",
+    #unsafe_allow_html = True)
 
     if 'file_path' not in st.session_state:
         st.session_state['file_path'] = None
@@ -49,40 +49,42 @@ def main():
         st.session_state['selected'] = None
             
     with st.sidebar.expander("Leitura de arquivo"):    
-   
-        data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"], key = 'uploader')
+        st.markdown('### Carregue o arquivo CSV 👇')
         
-        #if st.session_state['file_path'] != None:
-        if data_file is not None:
-            
-            st.session_state['file_path'] = data_file.name
+        @st.cache(allow_output_mutation=True)
+        def load_data(file):
+            df = pd.read_csv(file, parse_dates=True)
+            #df.columns = ['url', 'redir']
+            return df
+        
+        file = st.file_uploader("",type=["csv"], key = 'uploader')
+        
+        if file is not None:
+            st.session_state['file_path'] = file.name
             file_details = {"nome do arquivo":st.session_state['file_path'],
-                    "tipo do arquivo":data_file.type,
-                    "tamanho do arquivo":data_file.size}
-
-            df = pd.read_csv(data_file, parse_dates=True)
+                    "tipo do arquivo":file.type}
+            
+            #'Dados', file_details
+            
+            df = load_data(file)
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
 
             st.session_state['id'] = st.selectbox("Identificador:", df.columns)
-            data_group = st.session_state['id']
-             
             st.session_state['time_col'] = st.selectbox("Coluna Temporal:", df.columns)
-            time_col = st.session_state['time_col']
-            
             st.session_state['real'] = st.selectbox("Série Real:", df.columns)
-            y_true  = st.session_state['real']
-            
             st.session_state['previsto'] = st.selectbox("Série Prevista:", df.columns)
-            y_predicted = st.session_state['previsto']
-            
             st.session_state['classes'] = st.multiselect("Classes:", df.columns)
-            classes = st.session_state['classes']
-            
             st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
-            data_group2 = st.session_state['agrupamento']
-        
+            
             df['NÃO'] = 0
+            
+            data_group = st.session_state['id']
+            time_col = st.session_state['time_col']
+            y_true  = st.session_state['real']
+            y_predicted = st.session_state['previsto']
+            classes = st.session_state['classes']
+            data_group2 = st.session_state['agrupamento']
             
             grouped = df[[data_group,
                           data_group2,

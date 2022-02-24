@@ -90,7 +90,7 @@ def standard_residual(data, data_group, y_true, y_predicted):
                 data.loc[data[data_group] == item, y_predicted])
     return data
 
-def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
+def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, classes:List, y_true:str, y_predicted:str):
     
     #categories = data.groupby([data_group]).unique().tolist()
     #st.markdown(f"""
@@ -98,54 +98,102 @@ def create_global_metrics(data, data_group, y_true:str, y_predicted:str):
     #unsafe_allow_html = True)
     
     #DIAS ACIMA DE 5%
-    st.markdown("""
-            <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
-    unsafe_allow_html = True)
-    dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
-    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
-    # Customize aspect
-    fig.update_xaxes(tickangle=-45)
-    fig.update_traces(marker_color='rgb(234, 82, 111)', marker_line_color='rgb(0, 0, 0)',
-                marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.1f}', textposition='outside')
-    fig.update_layout(hovermode='x')          
-    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-    #fig.update_xaxes(categoryorder='category ascending')
-    fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
-    st.plotly_chart(fig, use_container_width=True)
-    
-    #MAPE
-    st.markdown("""
-            <span style="color:rgb(110, 68, 255)"><font size="5">MAPE</font></span>""",
-    unsafe_allow_html = True)
-    dfplot = data.groupby([data_group]).mean().reset_index()
-    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                y=dfplot["mape"])])
-    # Customize aspect
-    fig.update_xaxes(tickangle=-45)
-    fig.update_traces(marker_color='rgb(110, 68, 255)', marker_line_color='rgb(0, 0, 0)',
-                marker_line_width=1.5, opacity=0.75,
-                texttemplate='%{y:.1f}', textposition='outside')
-    fig.update_layout(hovermode='x')          
-    fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
-    st.plotly_chart(fig, use_container_width=True)
+    with st.expander("DIAS ACIMA DE 5%"):
+        #st.markdown("""
+        #        <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
+        #unsafe_allow_html = True)
+        st.subheader(data_group)
+        dfplot = data.groupby([data_group]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+        # Customize aspect
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(marker_color='rgb(234, 82, 111)', marker_line_color='rgb(0, 0, 0)',
+                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.1f}', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+        #fig.update_xaxes(categoryorder='category ascending')
+        fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        for classe in classes:
+            st.subheader(classe)
+            dfplot = data.groupby([time_col, classe]).sum().reset_index()
+            dfplot['mape'] = MAPE(dfplot[y_true], dfplot[y_predicted])
+            dfplot['acima5'] = np.where(dfplot['mape']>5, True, False)
 
+            # ACIMA DE 5% POR CLASSE
+            dfplot = dfplot.groupby([classe]).apply(lambda x: 100*x.acima5.sum()/x.acima5.count()).reset_index()
+            #st.dataframe(dfplot)
+            
+            fig = go.Figure(data=[go.Bar(x=dfplot[classe].unique().tolist(),
+                                        y=dfplot.iloc[:, 1])])
+            # Customize aspect
+            fig.update_xaxes(tickangle=-45)
+            fig.update_traces(marker_color='rgb(234, 82, 111)', marker_line_color='rgb(0, 0, 0)',
+                        marker_line_width=1.5, opacity=0.75,
+                        texttemplate='%{y:.1f}', textposition='outside')
+            fig.update_layout(hovermode='x')          
+            fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with st.expander("MAPE"):
+    #MAPE
+        #st.markdown("""
+        #        <span style="color:rgb(110, 68, 255)"><font size="5">MAPE</font></span>""",
+        #unsafe_allow_html = True)
+        st.subheader(data_group)
+        dfplot = data.groupby([data_group]).mean().reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot["mape"])])
+        # Customize aspect
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(marker_color='rgb(110, 68, 255)', marker_line_color='rgb(0, 0, 0)',
+                    marker_line_width=1.5, opacity=0.75,
+                    texttemplate='%{y:.1f}', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        for classe in classes:
+            
+            st.subheader(classe)
+            dfplot = data.groupby([time_col, classe]).sum().reset_index()
+            dfplot['mape'] = MAPE(dfplot[y_true], dfplot[y_predicted])
+
+            # MAPE POR CLASSE
+            dfplot = dfplot.groupby([classe]).mean().reset_index()
+            #st.dataframe(dfplot['mape'])
+            
+            fig = go.Figure(data=[go.Bar(x=dfplot[classe].unique().tolist(),
+                                        y=dfplot['mape'])])
+            # Customize aspect
+            fig.update_xaxes(tickangle=-45)
+            fig.update_traces(marker_color='rgb(110, 68, 255)', marker_line_color='rgb(0, 0, 0)',
+                        marker_line_width=1.5, opacity=0.75,
+                        texttemplate='%{y:.1f}', textposition='outside')
+            fig.update_layout(hovermode='x')          
+            fig = format_fig(fig, x_title=data_group, y_title='Percentual(%)')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with st.expander("RMSE"):
     #RMSE
-    st.markdown("""
-            <span style="color:rgb(37, 206, 209)"><font size="5">RMSE</font></span>""",
-    unsafe_allow_html = True)
-    dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
-    fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
-                                y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
-    # Customize aspect
-    fig.update_xaxes(tickangle=-45)
-    fig.update_traces(marker_color='rgb(37, 206, 209)', marker_line_color='rgb(0, 0, 0)',
-                marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.0f}', textposition='outside')
-    fig.update_layout(hovermode='x')          
-    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
-    #fig.update_xaxes(categoryorder='category ascending')
-    fig = format_fig(fig, x_title=data_group, y_title='rmse')
-    st.plotly_chart(fig, use_container_width=True)
+    #st.markdown("""
+    #        <span style="color:rgb(37, 206, 209)"><font size="5">RMSE</font></span>""",
+    #unsafe_allow_html = True)
+        dfplot = data.groupby([data_group]).apply(lambda x: RMSE(x[y_true], x[y_predicted])).reset_index()
+        fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
+                                    y=dfplot.iloc[:, 1], text = dfplot.iloc[:,[1]])])
+        # Customize aspect
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(marker_color='rgb(37, 206, 209)', marker_line_color='rgb(0, 0, 0)',
+                    marker_line_width=1.5, opacity=0.75, texttemplate='%{text:.0f}', textposition='outside')
+        fig.update_layout(hovermode='x')          
+        #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+        #fig.update_xaxes(categoryorder='category ascending')
+        fig = format_fig(fig, x_title=data_group, y_title='rmse')
+        st.plotly_chart(fig, use_container_width=True)
+        
 
 def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_predicted:str):
     categories = sorted(data[data_group].unique().tolist())

@@ -95,7 +95,7 @@ def main():
             st.subheader(f'Métricas para o agrupamento: {chosen_group}')
             create_global_metrics(df, time_col, data_group, classes, y_true, y_predicted)   
         except:
-        #    st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+            st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
 
     ########################################## TELA 2 ##########################################
     elif choice == 'Agrupamentos':

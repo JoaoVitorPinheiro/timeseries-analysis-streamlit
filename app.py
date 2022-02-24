@@ -41,8 +41,6 @@ def main():
             data_group2 = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
             df['NÃO'] = 0
             grouped = df[[data_group, data_group2, time_col, y_true, y_predicted]]
-
-            #if data_group2 != 'NÃO':
             chosen_group = st.selectbox(f"Selecione o agrupamento:",
                             sorted(df[data_group2].unique().tolist()))
             df = df[df[data_group2]==chosen_group]  
@@ -93,10 +91,10 @@ def main():
                 st.dataframe(df[[data_group, data_group2, time_col, y_true, y_predicted]+classes])
             except:
                 st.warning("Sem arquivo")
-        #try:
-        st.subheader(f'Métricas para o agrupamento: {chosen_group}')
-        create_global_metrics(df, time_col, data_group, classes, y_true, y_predicted)   
-        #except:
+        try:
+            st.subheader(f'Métricas para o agrupamento: {chosen_group}')
+            create_global_metrics(df, time_col, data_group, classes, y_true, y_predicted)   
+        except:
         #    st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
 
     ########################################## TELA 2 ##########################################

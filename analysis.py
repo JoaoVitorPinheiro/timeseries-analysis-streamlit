@@ -69,7 +69,8 @@ def preprocess_dataframe(data: pd.DataFrame,
     # Timestamp errado
     data[time_col] = pd.to_datetime(data[time_col], format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
-    data = data.dropna()
+    nan_mask = (data[y_true].isna())|(data[y_predicted].isna())
+    data = data[~nan_mask]   # remove some nan's only
     data['mape'] = MAPE(data[y_true],data[y_predicted])
     #data['rmse'] = RMSE(data[y_true],data[y_predicted])
     # Limiar do MAPE para evitar distorções

@@ -21,11 +21,42 @@ def main():
             ######""",
     unsafe_allow_html = True)
 
+    if 'file_path' not in st.session_state:
+        st.session_state['file_path'] = None
+            
+    if 'id' not in st.session_state:
+        st.session_state['id'] = None  
+        
+    if 'time_col' not in st.session_state:
+        st.session_state['time_col'] = None
+        
+    if 'real' not in st.session_state:
+        st.session_state['real'] = None
+        
+    if 'previsto' not in st.session_state:
+        st.session_state['previsto'] = None
+        
+    if 'classes' not in st.session_state:
+        st.session_state['classes'] = None
+        
+    if 'agrupamento' not in st.session_state:
+        st.session_state['agrupamento'] = None
+        
+    if 'chosengroup' not in st.session_state:
+        st.session_state['chosengroup'] = None
+    
+    if 'selected' not in st.session_state:
+        st.session_state['selected'] = None
+            
     with st.sidebar.expander("Leitura de arquivo"):    
-
-        data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"])
+   
+        data_file = st.file_uploader("Selecionar arquivo CSV",type=["csv"], key = 'uploader')
+        
+        #if st.session_state['file_path'] != None:
         if data_file is not None:
-            file_details = {"nome do arquivo":data_file.name,
+            
+            st.session_state['file_path'] = data_file.name
+            file_details = {"nome do arquivo":st.session_state['file_path'],
                     "tipo do arquivo":data_file.type,
                     "tamanho do arquivo":data_file.size}
 
@@ -33,16 +64,35 @@ def main():
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
 
-            data_group = st.selectbox("Identificador:", df.columns)
-            time_col = st.selectbox("Coluna Temporal:", df.columns)
-            y_true = st.selectbox("Série Real:", df.columns)
-            y_predicted = st.selectbox("Série Prevista:", df.columns)
-            classes = st.multiselect("Classes:", df.columns)
-            data_group2 = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
+            st.session_state['id'] = st.selectbox("Identificador:", df.columns)
+            data_group = st.session_state['id']
+             
+            st.session_state['time_col'] = st.selectbox("Coluna Temporal:", df.columns)
+            time_col = st.session_state['time_col']
+            
+            st.session_state['real'] = st.selectbox("Série Real:", df.columns)
+            y_true  = st.session_state['real']
+            
+            st.session_state['previsto'] = st.selectbox("Série Prevista:", df.columns)
+            y_predicted = st.session_state['previsto']
+            
+            st.session_state['classes'] = st.multiselect("Classes:", df.columns)
+            classes = st.session_state['classes']
+            
+            st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
+            data_group2 = st.session_state['agrupamento']
+        
             df['NÃO'] = 0
-            grouped = df[[data_group, data_group2, time_col, y_true, y_predicted]]
-            chosen_group = st.selectbox(f"Selecione o agrupamento:",
+            
+            grouped = df[[data_group,
+                          data_group2,
+                          time_col,
+                          y_true,
+                          y_predicted]]
+            st.session_state['chosengroup'] = st.selectbox(f"Selecione o agrupamento:",
                             sorted(df[data_group2].unique().tolist()))
+            chosen_group = st.session_state['chosengroup']
+            
             df = df[df[data_group2]==chosen_group]  
                 
             try:
@@ -88,12 +138,21 @@ def main():
     if choice == 'Métricas Globais':
         with st.expander("Dados"):
             try:
-                st.dataframe(df[[data_group, data_group2, time_col, y_true, y_predicted]+classes])
+                st.dataframe(df[[data_group,
+                                 data_group2,
+                                 time_col,
+                                 y_true,
+                                 y_predicted]+classes])
             except:
                 st.warning("Sem arquivo")
         try:
             st.subheader(f'Métricas para o agrupamento: {chosen_group}')
-            create_global_metrics(df, time_col, data_group, classes, y_true, y_predicted)   
+            create_global_metrics(df,
+                                  time_col,
+                                  data_group,
+                                  classes,
+                                  y_true,
+                                  y_predicted)   
         except:
             st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
 
@@ -101,15 +160,22 @@ def main():
     elif choice == 'Agrupamentos':
         st.subheader(f'Comparação dos agrupamentos')
         try:
-            create_grouped_radar(grouped, data_group, data_group2, time_col, y_true, y_predicted) 
+            create_grouped_radar(grouped,
+                                 data_group,
+                                 data_group2,
+                                 time_col,
+                                 y_true,
+                                 y_predicted) 
         except:
             st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
             
     ########################################## TELA 3 ##########################################
-    elif choice == 'Análise de Resíduos':    
+    elif choice == 'Análise de Resíduos': 
+          
         try:
-            selected = st.selectbox(f"Selecione o {data_group}:",
+            st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
                                     sorted(df[data_group].unique().tolist()))
+            selected = st.session_state['selected']
         except: 
             pass      
         try:
@@ -131,10 +197,10 @@ def main():
                         delta="")
         
             plot_series(df,
-                    time_col,
-                    y_true,
-                    y_predicted,
-                    data_group,
+                    st.session_state['time_col'] ,
+                    st.session_state['real'] ,
+                    st.session_state['previsto'] ,
+                    st.session_state['id'] ,
                     selected)
         except:
             pass

@@ -146,6 +146,7 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
         #MAPE
         st.subheader(data_group)
         dfplot = data.groupby([data_group]).mean().reset_index()
+        dfplot["mape"] = np.where(dfplot["mape"]>100, 100, dfplot["mape"])
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
                                     y=dfplot["mape"])])
         # Customize aspect
@@ -162,7 +163,7 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
             st.subheader(classe)
             dfplot = data.groupby([time_col, classe]).sum().reset_index()
             dfplot['mape'] = MAPE(dfplot[y_true], dfplot[y_predicted])
-
+            dfplot["mape"] = np.where(dfplot["mape"]>100, 100, dfplot["mape"])
             # MAPE POR CLASSE
             dfplot = dfplot.groupby([classe]).mean().reset_index()
             #st.dataframe(dfplot['mape'])

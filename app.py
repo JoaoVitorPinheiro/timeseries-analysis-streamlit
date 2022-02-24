@@ -90,7 +90,7 @@ def main():
     if choice == 'Métricas Globais':
         with st.expander("Dados"):
             try:
-                st.dataframe(df[[data_group, data_group2, time_col, y_true, y_predicted]])
+                st.dataframe(df[[data_group, data_group2, time_col, y_true, y_predicted]+classes])
             except:
                 st.warning("Sem arquivo")
         #try:

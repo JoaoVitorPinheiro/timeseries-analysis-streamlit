@@ -246,11 +246,11 @@ def main():
                     selected,
                     data_group
                 ) 
-            
+            check_mape(df,time_col,selected,data_group) 
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
         
-        check_mape(df,time_col,selected,data_group) 
+        
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################

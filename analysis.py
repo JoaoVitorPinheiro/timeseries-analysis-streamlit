@@ -42,8 +42,8 @@ def load_csv_file():
         
             data_group = st.selectbox("Chave ID:", df.columns)
             time_col = st.selectbox("Coluna Temporal:", df.columns)
-            y_true = st.selectbox("Série Real:", df.columns)
-            y_predicted = st.selectbox("Série Prevista:", df.columns)
+            y_true = st.selectbox("Real:", df.columns)
+            y_predicted = st.selectbox("Previsto:", df.columns)
             data_group2 = st.selectbox("Agrupamento:", df.columns)
             chosen_group = st.selectbox(f"Selecione o agrupamento:",
                                     sorted(df[data_group2].unique().tolist()))
@@ -72,14 +72,14 @@ def preprocess_dataframe(data: pd.DataFrame,
     nan_mask = (data[y_true].isna())|(data[y_predicted].isna())
     data = data[~nan_mask]   # remove some nan's only
     data['mape'] = MAPE(data[y_true],data[y_predicted])
-    #data['rmse'] = RMSE(data[y_true],data[y_predicted])
+    data['rmse'] = RMSE(data[y_true],data[y_predicted])
     # Limiar do MAPE para evitar distorções
-    data['mape'] = np.where(data['mape']>100, 100, data['mape'])
+    #data['mape'] = np.where(data['mape']>100, np.nan, data['mape'])
+
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
-    #data['lim_sup'] = 1.96
-    #data['lim_inf'] = -1.96
+    data['acima20'] = np.where(data['mape']>20, True, False)
     data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     return data
@@ -101,6 +101,7 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
     st.markdown("""
                 <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
         unsafe_allow_html = True)
+    
     #DIAS ACIMA DE 5%
     with st.expander("..."):
 
@@ -146,7 +147,7 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
         #MAPE
         st.subheader(data_group)
         dfplot = data.groupby([data_group]).mean().reset_index()
-        dfplot["mape"] = np.where(dfplot["mape"]>100, 100, dfplot["mape"])
+        dfplot["mape"] = np.where(dfplot["mape"]>100, np.nan, dfplot["mape"])
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
                                     y=dfplot["mape"])])
         # Customize aspect
@@ -198,14 +199,14 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
         fig = format_fig(fig, x_title=data_group, y_title='rmse')
         st.plotly_chart(fig, use_container_width=True)
         
-
 def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_predicted:str):
-    categories = sorted(data[data_group].unique().tolist())
+    categories = sorted(data[data_group].unique().tolist())[:-1]
     groups = sorted(data[data_group2].unique().tolist())
-    
+
     options = st.multiselect(
      'Adicione os Itens:',
-    categories)
+    options = categories,
+    default = categories)
 
     chosen_metric=st.selectbox('Métrica', ['MAPE', 'ACIMA5'])
     #st.markdown("""
@@ -216,7 +217,7 @@ def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_
         
         dfplot = data[data[data_group2]==group]
         dfplot = preprocess_dataframe(dfplot, time_col, y_true, y_predicted)
-        
+        dfplot['mape'] = dfplot['mape'].clip(0,100)
         if chosen_metric=='MAPE':
             values = dfplot.groupby([data_group]).mape.mean()
         else:
@@ -347,6 +348,7 @@ def check_seasonal_residuals(data: pd.DataFrame,
     
     # Monthly Boxplot
     with st.expander("Mês"):
+        
         df_month = data[data[data_group] == selected]
         df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
         df_month['month'] = df_month[time_col].dt.month
@@ -366,7 +368,39 @@ def check_seasonal_residuals(data: pd.DataFrame,
         fig = px.box(df_weekday, x="weekday", y="residuo")
         fig.update_traces(quartilemethod="exclusive")
         st.plotly_chart(fig, use_container_width=True)
+
+def check_mape(data: pd.DataFrame,
+                    time_col: str,
+                    selected: str,
+                    data_group: str
+                    ):
     
+    st.subheader('Propriedades do MAPE')
+    st.dataframe(data.loc[data[data_group] == selected, [data_group,time_col,'mape']].sort_values(by = ['mape'], ascending=False))
+  
+    # Monthly Boxplot
+    with st.expander("Mês"):
+        
+        df_month = data[data[data_group] == selected]
+        df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
+        df_month['month'] = df_month[time_col].dt.month
+        df_month['month'] = df_month['month'].apply(nomear_mes)
+        
+        fig = px.box(df_month, x="month", y="mape")
+        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Weekday Boxplot
+    with st.expander("Dia da Semana"):
+        df_weekday = data[data[data_group] == selected]
+        df_weekday[time_col] = pd.to_datetime(df_weekday[time_col], format='%Y-%m-%d')
+        df_weekday['weekday'] = df_weekday[time_col].dt.weekday
+        df_weekday.sort_values(by = 'weekday', inplace = True)
+        df_weekday['weekday'] = df_weekday['weekday'].apply(nomear_dia)
+        fig = px.box(df_weekday, x="weekday", y="mape")
+        fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)
+        
 def check_holidays(data: pd.DataFrame,
                     time_col: str,
                     selected: str,

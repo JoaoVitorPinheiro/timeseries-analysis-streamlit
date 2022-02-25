@@ -54,7 +54,6 @@ def main():
         @st.cache(allow_output_mutation=True)
         def load_data(file):
             df = pd.read_csv(file, parse_dates=True)
-            #df.columns = ['url', 'redir']
             return df
         
         file = st.file_uploader("",type=["csv"], key = 'uploader')
@@ -72,8 +71,9 @@ def main():
 
             st.session_state['id'] = st.selectbox("Identificador:", df.columns)
             st.session_state['time_col'] = st.selectbox("Coluna Temporal:", df.columns)
-            st.session_state['real'] = st.selectbox("Série Real:", df.columns)
-            st.session_state['previsto'] = st.selectbox("Série Prevista:", df.columns)
+            # TROQUEI O PREVISTO PELO REAL
+            st.session_state['real'] = st.selectbox("Real (QDR):", df.columns)
+            st.session_state['previsto'] = st.selectbox("Previsto (QDP):", df.columns)
             st.session_state['classes'] = st.multiselect("Classes:", df.columns)
             st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
             
@@ -181,23 +181,42 @@ def main():
         except: 
             pass      
         try:
-            metrica = df[df[data_group]==selected].mape.mean()
+            mape_metrica = df[df[data_group]==selected].mape.clip(0,100).mean()
+            
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
             perc_acima5 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
-            col1, col2, col3 = st.columns(3)
-            delta2 = np.round(metrica-5,2)
-        
-            col1.metric(label=data_group,
+            
+            p_mask = (df['acima20']==True) & (df[data_group]==selected)
+            perc_acima20 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
+            
+            days_count = int(df[df[data_group]==selected].shape[0])
+            
+            days_acima5 = int(days_count*perc_acima5)
+            days_acima20 = int(days_count*perc_acima20)
+            
+            col1 = st.columns(5)
+            #col2 = st.columns(3)
+            delta2 = np.round(mape_metrica-5,2)
+
+            
+            col1[0].metric(label=data_group,
                         value=f"{selected}",
-                        delta="")
-            col2.metric(label="MAPE",
-                        value=f"{round(metrica,2)}%",
+                        delta=f"")
+            col1[1].metric(label="Período",
+                        value=f"{days_count} dias")
+            col1[2].metric(label="MAPE",
+                        value=f"{round(mape_metrica,2)}%",
                         delta=f"{delta2}%",
                         delta_color="inverse")
-            col3.metric(label="Dias Acima de 5%",
+            col1[3].metric(label="Dias Acima de 5%",
                         value=f"{round(100*perc_acima5,2)}%",
-                        delta="")
-        
+                        delta=f"{days_acima5} dias",
+                        delta_color='off')
+            col1[4].metric(label="Dias Acima de 20%",
+                        value=f"{round(100*perc_acima20,2)}%",
+                        delta=f"{days_acima20} dias",
+                        delta_color='off')
+            
             plot_series(df,
                     st.session_state['time_col'] ,
                     st.session_state['real'] ,
@@ -229,10 +248,11 @@ def main():
                     selected,
                     data_group
                 ) 
+            
 
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
-    
+        check_mape(df,time_col,selected,data_group) 
     ########################################## TELA 4 ##########################################
     elif choice == 'Benchmark':
     # Recebe o modelo 2

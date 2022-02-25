@@ -376,8 +376,11 @@ def check_mape(data: pd.DataFrame,
                     ):
     
     st.subheader('Propriedades do MAPE')
-    st.dataframe(data.loc[data[data_group] == selected, [data_group,time_col,'mape']].sort_values(by = ['mape'], ascending=False))
-  
+    dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'mape']].sort_values(by = ['mape'], ascending=False)
+    dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
+    
+    st.dataframe(dfplot)
+    
     # Monthly Boxplot
     with st.expander("Mês"):
         

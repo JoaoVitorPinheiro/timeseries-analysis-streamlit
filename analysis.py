@@ -2,7 +2,6 @@
 #from pandas.plotting import autocorrelation_plot
 #from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import math
-from tkinter import TRUE
 import numpy as np
 import pandas as pd
 import plotly.express as px

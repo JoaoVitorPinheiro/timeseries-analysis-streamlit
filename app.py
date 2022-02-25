@@ -3,7 +3,9 @@ from dashboard import *
 import os
 
 os.environ['TZ'] = 'UTC'
-MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos', 'Benchmark']
+MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos',
+        #'Benchmark'
+        ]
 
 def main():
     st.sidebar.title("Navegação")
@@ -198,7 +200,6 @@ def main():
             #col2 = st.columns(3)
             delta2 = np.round(mape_metrica-5,2)
 
-            
             col1[0].metric(label=data_group,
                         value=f"{selected}",
                         delta=f"")
@@ -226,38 +227,41 @@ def main():
         except:
             pass
         
+        with st.expander('Decomposição Clássica'):
+            chosen = st.selectbox('',  sorted(df.columns.tolist()))
+            try:
+                plot_seasonal_decompose(df, data_group, selected, time_col, col = chosen)
+            except:
+                pass
+        
         try:   
             df = standard_residual(df, data_group, y_true, y_predicted)
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
         try:   
             st.subheader("Propriedades dos Resíduos")
-        
+
             check_residuals(df,
                     time_col,
                     selected,
                     data_group
                     )  
-            check_seasonal_residuals(df,
-                    time_col,
-                    selected,
-                    data_group
-                    ) 
             check_holidays(df,
                     time_col,
                     selected,
                     data_group
                 ) 
             
-
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
+        
         check_mape(df,time_col,selected,data_group) 
+        #check_rmse(df,time_col,selected,data_group) 
     ########################################## TELA 4 ##########################################
-    elif choice == 'Benchmark':
+    #elif choice == 'Benchmark':
     # Recebe o modelo 2
     # Abre uma janela para leitura de dados
-        pass     
+    #    pass     
 if __name__ == "__main__":
     set_streamlit()
     set_page_container_style()

@@ -77,9 +77,9 @@ def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     """
     try:
         residual = (y_true - y_predicted)
-        mpe = np.where(y_true!=0, residual/y_true, np.nan)
+        mpe = np.where(y_predicted!=0, residual/y_predicted, np.nan)
         mpe = np.where((residual==0) & (y_predicted==0), 0, mpe)
-        mpe = np.where(mpe > 0.5, 0.1, mpe)
+        #mpe = np.where(mpe > 0.5, 0.1, mpe)
         
         return mpe*100
     except:

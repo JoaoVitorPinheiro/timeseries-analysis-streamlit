@@ -2,6 +2,7 @@
 #from pandas.plotting import autocorrelation_plot
 #from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import math
+from tkinter import TRUE
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -9,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 from statsmodels.tsa.stattools import pacf, acf
+from statsmodels.tsa.seasonal import seasonal_decompose
 import statsmodels.api as sm
 import streamlit as st
 from typing import List, Any, Dict, Tuple
@@ -146,8 +148,10 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
     with st.expander("..."):
         #MAPE
         st.subheader(data_group)
-        dfplot = data.groupby([data_group]).mean().reset_index()
-        dfplot["mape"] = np.where(dfplot["mape"]>100, np.nan, dfplot["mape"])
+        dfplot = data
+        dfplot["mape"] = np.where(dfplot["mape"]>100, 100, dfplot["mape"])
+        dfplot = dfplot.groupby([data_group]).mean().reset_index()
+        #dfplot["mape"] = np.where(dfplot["mape"]>100, np.nan, dfplot["mape"])
         fig = go.Figure(data=[go.Bar(x=dfplot[data_group].unique().tolist(),
                                     y=dfplot["mape"])])
         # Customize aspect
@@ -251,7 +255,7 @@ def check_residuals(data: pd.DataFrame,
     data = data[data[data_group] == selected]
     #data.index = pd.DatetimeIndex(data.index)
     #data = data.resample(period).sum()
-    
+
     with st.expander("Resíduos"):
         standardize = st.checkbox('Resíduo Padronizado')
         fig = go.Figure()
@@ -320,8 +324,8 @@ def check_residuals(data: pd.DataFrame,
         fig.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
         fig = format_fig(fig, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig, use_container_width=True)
-        
-    with st.expander("Distribuição"):
+    
+    with st.expander("Medidas de Posição"):
         #fig = px.histogram(data, x="residuo",
         #            marginal="box", # or violin, rug
         #            hover_data=['residuo'])
@@ -333,13 +337,21 @@ def check_residuals(data: pd.DataFrame,
         fig = ff.create_distplot([data['residuo']], ['residuo'],
                                  show_hist=False, 
                                  colors=['rgb(32,4,114)'])
-        fig.add_vline(x=2.5, line_width=1, line_dash="dash", line_color="red")
+        fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="red")
         st.plotly_chart(fig, use_container_width=True)
-        
-    with st.expander("Função de Autocorrelação"):
-        p_acf = st.checkbox('Autocorrelação Parcial')
-        corr_plot(data['residuo'], plot_pacf = p_acf)
 
+        check_seasonal_residuals(data, time_col, selected, data_group)
+
+    with st.expander("Função de Autocorrelação"):
+        corr_lin = data['residuo'].dropna()
+        cor_quad = corr_lin**2
+        
+        p_acf = st.checkbox('Autocorrelação Parcial')
+        st.write('Resíduos')
+        corr_plot(corr_lin, plot_pacf = p_acf)
+        st.write('Resíduos Quadráticos')
+        corr_plot(cor_quad, plot_pacf = p_acf)
+        
 def check_seasonal_residuals(data: pd.DataFrame,
                     time_col: str,
                     selected: str,
@@ -347,27 +359,45 @@ def check_seasonal_residuals(data: pd.DataFrame,
                     ):
     
     # Monthly Boxplot
-    with st.expander("Mês"):
-        
-        df_month = data[data[data_group] == selected]
-        df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
-        df_month['month'] = df_month[time_col].dt.month
-        df_month['month'] = df_month['month'].apply(nomear_mes)
-        
-        fig = px.box(df_month, x="month", y="residuo")
-        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
-        st.plotly_chart(fig, use_container_width=True)
+    st.write('Resíduos por Mês')
+    df_month = data[data[data_group] == selected]
+    df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
+    df_month['month'] = df_month[time_col].dt.month
+    df_month['month'] = df_month['month'].apply(nomear_mes)
+    #fig = px.box(df_month, x="month", y="residuo")
+    fig = go.Figure()
+    fig.add_trace(go.Box(
+        x = df_month["month"],
+        y = df_month["residuo"],
+        boxmean=True # represent mean
+    ))
+    fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
+    st.plotly_chart(fig, use_container_width=True)
     
     # Weekday Boxplot
-    with st.expander("Dia da Semana"):
-        df_weekday = data[data[data_group] == selected]
-        df_weekday[time_col] = pd.to_datetime(df_weekday[time_col], format='%Y-%m-%d')
-        df_weekday['weekday'] = df_weekday[time_col].dt.weekday
-        df_weekday.sort_values(by = 'weekday', inplace = True)
-        df_weekday['weekday'] = df_weekday['weekday'].apply(nomear_dia)
-        fig = px.box(df_weekday, x="weekday", y="residuo")
-        fig.update_traces(quartilemethod="exclusive")
-        st.plotly_chart(fig, use_container_width=True)
+    st.write('Resíduos por Dia da Semana')
+    df_weekday = data[data[data_group] == selected]
+    df_weekday[time_col] = pd.to_datetime(df_weekday[time_col], format='%Y-%m-%d')
+    df_weekday['weekday'] = df_weekday[time_col].dt.weekday
+    df_weekday.sort_values(by = 'weekday', inplace = True)
+    df_weekday['weekday'] = df_weekday['weekday'].apply(nomear_dia)
+    #fig = px.box(df_weekday, x="weekday", y="residuo")
+    #st.plotly_chart(fig, use_container_width=True)
+    fig = go.Figure()
+    fig.add_trace(go.Box(
+        x = df_weekday["weekday"],
+        y = df_weekday["residuo"],
+        #name='Only Mean',
+        boxmean=True # represent mean
+    ))
+    #fig.add_trace(go.Box(
+    #    x = df_weekday["weekday"],
+    #    y = df_weekday["residuo"],
+    #    name='Mean & SD',
+    #    boxmean='sd' # represent mean and standard deviation
+    #))
+    fig.update_traces(quartilemethod="exclusive")
+    st.plotly_chart(fig, use_container_width=True)
 
 def check_mape(data: pd.DataFrame,
                     time_col: str,
@@ -376,33 +406,95 @@ def check_mape(data: pd.DataFrame,
                     ):
     
     st.subheader('Propriedades do MAPE')
-    dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'mape']].sort_values(by = ['mape'], ascending=False)
+    dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'mape','mpe']].sort_values(by = ['mape'], ascending=False)
     dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
-    
+    dfplot = dfplot.dropna()
     st.dataframe(dfplot)
     
-    # Monthly Boxplot
-    with st.expander("Mês"):
+    with st.expander("Medidas de Posição"):
         
+        st.write('Distribuição MPE')
+        fig = ff.create_distplot([dfplot['mpe']], ['mpe'],
+                                    show_hist=False, 
+                                    colors=['rgb(32,4,114)'])
+        fig.add_vline(x=0, line_width=1, line_dash="dash", line_color="red")
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Monthly Boxplot
+        st.write('MAPE - Mês')
         df_month = data[data[data_group] == selected]
         df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
         df_month['month'] = df_month[time_col].dt.month
         df_month['month'] = df_month['month'].apply(nomear_mes)
-        
-        fig = px.box(df_month, x="month", y="mape")
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = df_month["month"],
+            y = df_month["mape"],
+            boxmean=True # represent mean
+        ))
         fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
         st.plotly_chart(fig, use_container_width=True)
-    
-    # Weekday Boxplot
-    with st.expander("Dia da Semana"):
+        
+        # Weekday Boxplot
+        st.write('MAPE - Dias da Semana')
         df_weekday = data[data[data_group] == selected]
         df_weekday[time_col] = pd.to_datetime(df_weekday[time_col], format='%Y-%m-%d')
         df_weekday['weekday'] = df_weekday[time_col].dt.weekday
         df_weekday.sort_values(by = 'weekday', inplace = True)
         df_weekday['weekday'] = df_weekday['weekday'].apply(nomear_dia)
-        fig = px.box(df_weekday, x="weekday", y="mape")
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = df_weekday["weekday"],
+            y = df_weekday["mape"],
+            boxmean=True # represent mean
+        ))
         fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)     
+
+def check_rmse(data: pd.DataFrame,
+                    time_col: str,
+                    selected: str,
+                    data_group: str
+                    ):
+    
+    st.subheader('Propriedades do RMSE')
+    dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'rmse']].sort_values(by = ['rmse'], ascending=False)
+    dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
+    dfplot = dfplot.dropna()
+    st.dataframe(dfplot)
+    
+    with st.expander("Medidas de Posição"):
+        
+        # Monthly Boxplot
+        st.write('RMSE - Mês')
+        df_month = data[data[data_group] == selected]
+        df_month[time_col] = pd.to_datetime(df_month[time_col], format='%Y-%m-%d')
+        df_month['month'] = df_month[time_col].dt.month
+        df_month['month'] = df_month['month'].apply(nomear_mes)
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = df_month["month"],
+            y = df_month["rmse"],
+            boxmean=True # represent mean
+        ))
+        fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Weekday Boxplot
+        st.write('RMSE - Dias da Semana')
+        df_weekday = data[data[data_group] == selected]
+        df_weekday[time_col] = pd.to_datetime(df_weekday[time_col], format='%Y-%m-%d')
+        df_weekday['weekday'] = df_weekday[time_col].dt.weekday
+        df_weekday.sort_values(by = 'weekday', inplace = True)
+        df_weekday['weekday'] = df_weekday['weekday'].apply(nomear_dia)
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = df_weekday["weekday"],
+            y = df_weekday["rmse"],
+            boxmean=True # represent mean
+        ))
+        fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)  
         
 def check_holidays(data: pd.DataFrame,
                     time_col: str,
@@ -412,6 +504,34 @@ def check_holidays(data: pd.DataFrame,
     
     # hOLIDAYS
     pass
+
+def plot_seasonal_decompose(df, data_group, selected, time_col, col, decompose_model = 'additive', interpol_method='linear', shared_y=False):
+    """Realiza decomposição automática da série temporal e imprime os quatro gráficos resultantes
+    (série, tendência, sazonalidade e resíduos)."""
+
+    assert decompose_model in ['additive', 'multiplicative']
+    
+    # Reindexando série para frequência diária
+    cg_vol = df.loc[df[data_group] == selected].set_index(time_col).asfreq('D')[col]
+    
+    # Realizando interpolação linear de dias faltantes
+    cg_vol = cg_vol.interpolate(method=interpol_method)
+    
+    # Decomposição linear
+    result = seasonal_decompose(cg_vol, model=decompose_model)
+    decompose_model = 'Aditiva' if decompose_model == 'additive' else 'Multiplicativa'
+    
+    # Plotando decomposição aditiva
+    fig = make_subplots(rows=4, cols=1, shared_xaxes=True, shared_yaxes=shared_y, vertical_spacing=0.05, 
+                        subplot_titles=('Série', 'Tendência', 'Sazonalidade', 'Residual'))
+    fig.update_layout(title=f'Decomposição {decompose_model} - {selected}', showlegend=False, height=800, width=1200)
+
+    fig.add_scatter(row=1, col=1, y=cg_vol, x=cg_vol.index, name='Série')
+    fig.add_scatter(row=2, col=1, y=result.trend, x=result.trend.index, name='Tendência')
+    fig.add_scatter(row=3, col=1, y=result.seasonal, x=result.trend.index, name='Sazonalidade')
+    fig.add_scatter(row=4, col=1, y=result.resid, x=result.trend.index, name='Residual')
+
+    st.plotly_chart(fig, use_container_width=True)
 
 def plot_series(data: pd.DataFrame,
                     time_col: str,
@@ -476,17 +596,18 @@ def plot_series(data: pd.DataFrame,
     st.plotly_chart(fig, use_container_width=True)
 
 def corr_plot(series, plot_pacf=False):
+    # Sem a Autocorrelation do Lag 0
     corr_array = pacf(series.dropna(), alpha=0.05, nlags=45) if plot_pacf else acf(series.dropna(), alpha=0.05, nlags=45)
     lower_y = corr_array[1][:,0] - corr_array[0]
     upper_y = corr_array[1][:,1] - corr_array[0]
-
+    
     fig = go.Figure()
     [fig.add_scatter(x=(x,x), y=(0,corr_array[0][x]), mode='lines',line_color='#3f3f3f',hoverinfo='skip') 
-     for x in range(len(corr_array[0]))]
-    fig.add_scatter(x=np.arange(len(corr_array[0])), y=corr_array[0], mode='markers', marker_color='#1f77b4',
+     for x in range(1, len(corr_array[0]))]
+    fig.add_scatter(x=np.arange(1,len(corr_array[0])), y=corr_array[0][1:], mode='markers', marker_color='#1f77b4',
                    marker_size=12)
-    fig.add_scatter(x=np.arange(len(corr_array[0])), y=upper_y, mode='lines', line_color='rgba(255,255,255,0)', hoverinfo='skip')
-    fig.add_scatter(x=np.arange(len(corr_array[0])), y=lower_y, mode='lines',fillcolor='rgba(32, 146, 230,0.3)', hoverinfo='skip',
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=upper_y[1:], mode='lines', line_color='rgba(255,255,255,0)', hoverinfo='skip')
+    fig.add_scatter(x=np.arange(len(corr_array[0])), y=lower_y[1:], mode='lines',fillcolor='rgba(32, 146, 230,0.3)', hoverinfo='skip',
             fill='tonexty', line_color='rgba(255,255,255,0)')
     fig.update_traces(showlegend=False)
     fig.update_xaxes(title_text="Lags", range=[-1, len(corr_array[0])])

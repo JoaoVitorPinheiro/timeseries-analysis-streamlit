@@ -228,8 +228,8 @@ def main():
             pass
         
         with st.expander('Decomposição Clássica'):
-            chosen = st.selectbox('',  sorted(df.columns.tolist()))
             try:
+                chosen = st.selectbox('',  sorted(df.columns.tolist()))
                 plot_seasonal_decompose(df, data_group, selected, time_col, col = chosen)
             except:
                 pass
@@ -239,14 +239,9 @@ def main():
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
         try:   
-            st.subheader("Propriedades dos Resíduos")
+            st.subheader("Resíduos")
 
             check_residuals(df,
-                    time_col,
-                    selected,
-                    data_group
-                    )  
-            check_holidays(df,
                     time_col,
                     selected,
                     data_group
@@ -257,6 +252,7 @@ def main():
         
         check_mape(df,time_col,selected,data_group) 
         #check_rmse(df,time_col,selected,data_group) 
+        
     ########################################## TELA 4 ##########################################
     #elif choice == 'Benchmark':
     # Recebe o modelo 2

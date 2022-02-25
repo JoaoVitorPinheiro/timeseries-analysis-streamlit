@@ -2,6 +2,7 @@
 #from pandas.plotting import autocorrelation_plot
 #from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import math
+from time import time
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -14,6 +15,8 @@ import statsmodels.api as sm
 import streamlit as st
 from typing import List, Any, Dict, Tuple
 from kpi import MAPE, RMSE, MPE, RSE
+from datetime import datetime, date
+from pandas.tseries.holiday import AbstractHolidayCalendar, GoodFriday, Holiday, Easter, Day
 
 from dashboard import * 
 
@@ -255,7 +258,7 @@ def check_residuals(data: pd.DataFrame,
     #data.index = pd.DatetimeIndex(data.index)
     #data = data.resample(period).sum()
 
-    with st.expander("Resíduos"):
+    with st.expander("Série"):
         standardize = st.checkbox('Resíduo Padronizado')
         fig = go.Figure()
         if standardize:
@@ -343,13 +346,13 @@ def check_residuals(data: pd.DataFrame,
 
     with st.expander("Função de Autocorrelação"):
         corr_lin = data['residuo'].dropna()
-        cor_quad = corr_lin**2
+        corr_quad = corr_lin**2
         
         p_acf = st.checkbox('Autocorrelação Parcial')
         st.write('Resíduos')
         corr_plot(corr_lin, plot_pacf = p_acf)
         st.write('Resíduos Quadráticos')
-        corr_plot(cor_quad, plot_pacf = p_acf)
+        corr_plot(corr_quad, plot_pacf = p_acf)
         
 def check_seasonal_residuals(data: pd.DataFrame,
                     time_col: str,
@@ -404,14 +407,16 @@ def check_mape(data: pd.DataFrame,
                     data_group: str
                     ):
     
-    st.subheader('Propriedades do MAPE')
+    st.subheader('MAPE')
+    data = generate_holidays(data, time_col, selected,data_group)
+    data['isholiday'] = np.where(data['feriado'].isna(), 0 , 1)
+
     dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'mape','mpe']].sort_values(by = ['mape'], ascending=False)
     dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
-    dfplot = dfplot.dropna()
-    st.dataframe(dfplot)
+    #dfplot = dfplot.dropna()
     
     with st.expander("Medidas de Posição"):
-        
+        st.dataframe(dfplot[[data_group, time_col, 'mape']])
         st.write('Distribuição MPE')
         fig = ff.create_distplot([dfplot['mpe']], ['mpe'],
                                     show_hist=False, 
@@ -431,6 +436,7 @@ def check_mape(data: pd.DataFrame,
             y = df_month["mape"],
             boxmean=True # represent mean
         ))
+        fig.update_xaxes(tickangle=-45)
         fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
         st.plotly_chart(fig, use_container_width=True)
         
@@ -447,23 +453,37 @@ def check_mape(data: pd.DataFrame,
             y = df_weekday["mape"],
             boxmean=True # represent mean
         ))
+        
         fig.update_traces(quartilemethod="exclusive")
         st.plotly_chart(fig, use_container_width=True)     
 
+    with st.expander("Feriados (todos os CG)"):
+        st.dataframe(data[[data_group, time_col, 'mape', 'feriado']])
+        dfplot = data[data['isholiday'] == 1]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = dfplot["feriado"],
+            y = dfplot["mape"],
+            boxmean=True # represent mean
+        ))
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)  
+        
 def check_rmse(data: pd.DataFrame,
                     time_col: str,
                     selected: str,
                     data_group: str
                     ):
     
-    st.subheader('Propriedades do RMSE')
+    st.subheader('RMSE')
     dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'rmse']].sort_values(by = ['rmse'], ascending=False)
     dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
     dfplot = dfplot.dropna()
-    st.dataframe(dfplot)
+    #st.dataframe(dfplot)
     
     with st.expander("Medidas de Posição"):
-        
         # Monthly Boxplot
         st.write('RMSE - Mês')
         df_month = data[data[data_group] == selected]
@@ -495,14 +515,45 @@ def check_rmse(data: pd.DataFrame,
         fig.update_traces(quartilemethod="exclusive")
         st.plotly_chart(fig, use_container_width=True)  
         
-def check_holidays(data: pd.DataFrame,
-                    time_col: str,
-                    selected: str,
-                    data_group: str
+def generate_holidays(data: pd.DataFrame,
+                   time_col:str,
+                   selected:str,
+                   data_group: str
                     ):
+
+    class Feriados_SP(AbstractHolidayCalendar):
+        rules = [
+            Holiday('Confraternização Universal', month=1, day=1),
+            Holiday('Aniversário de São Paulo', month=1, day=25),
+            Holiday('Segunda-Feira de Carnaval', month=1, day=1, offset=[Easter(), Day(-48)]),
+            Holiday('Terça-Feira de Carnaval', month=1, day=1, offset=[Easter(), Day(-47)]),
+            Holiday('Quarta-Feira de Cinzas', month=1, day=1, offset=[Easter(), Day(-46)]),
+            # Sexta-feira Santa
+            GoodFriday,
+            Holiday('Corpus Christi', month=1, day=1, offset=[Easter(), Day(60)]),
+            Holiday('Tiradentes', month = 4, day = 21),
+            Holiday('Dia do Trabalho', month = 5, day = 1),
+            Holiday('Revolução Constitucionalista', month=7, day=9, start_date='1997-01-01'),
+            Holiday('Independência do Brasil', month = 9, day = 7),
+            Holiday('Nossa Senhora Aparecida', month = 10, day = 12),
+            Holiday('Finados', month = 11, day = 2),
+            Holiday('Proclamação da República', month = 11, day = 15),
+            Holiday('Dia da Consciencia Negra', month=11, day=20, start_date='2004-01-01'),
+            Holiday('Vespera de Natal', month=12, day=24),
+            Holiday('Natal', month = 12, day = 25)]
+
+    dferiado = data
+    #dferiado = data[data[data_group]==selected]
     
-    # hOLIDAYS
-    pass
+    dferiado[time_col] = pd.to_datetime(dferiado[time_col], format = '%Y-%m-%d')
+    sp_cal = Feriados_SP()
+    sp_feriados = pd.offsets.CustomBusinessDay(calendar=sp_cal)
+    feriados_sp = sp_cal.holidays(dferiado[time_col].min(), dferiado[time_col].max(), return_name = True)
+    feriados_sp = feriados_sp.reset_index()
+    feriados_sp.columns = [time_col, 'feriado']
+    dferiado = dferiado.merge(feriados_sp, on = [time_col], how = 'left')
+    
+    return dferiado
 
 def plot_seasonal_decompose(df, data_group, selected, time_col, col, decompose_model = 'additive', interpol_method='linear', shared_y=False):
     """Realiza decomposição automática da série temporal e imprime os quatro gráficos resultantes
@@ -529,7 +580,7 @@ def plot_seasonal_decompose(df, data_group, selected, time_col, col, decompose_m
     fig.add_scatter(row=2, col=1, y=result.trend, x=result.trend.index, name='Tendência')
     fig.add_scatter(row=3, col=1, y=result.seasonal, x=result.trend.index, name='Sazonalidade')
     fig.add_scatter(row=4, col=1, y=result.resid, x=result.trend.index, name='Residual')
-
+    
     st.plotly_chart(fig, use_container_width=True)
 
 def plot_series(data: pd.DataFrame,
@@ -611,7 +662,7 @@ def corr_plot(series, plot_pacf=False):
     fig.update_traces(showlegend=False)
     fig.update_xaxes(title_text="Lags", range=[-1, len(corr_array[0])])
     fig.update_yaxes(showgrid=False, zerolinecolor='#000000')
-
+    
     title='Partial Autocorrelation (PACF)' if plot_pacf else 'Autocorrelation (ACF)'
     fig = format_fig(fig, title_text = title, x_title = 'Lags', y_title='Corr')
     

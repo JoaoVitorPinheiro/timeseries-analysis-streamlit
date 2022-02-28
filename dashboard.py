@@ -1,5 +1,4 @@
 import streamlit as st
-from analysis import *
 import os
    
 PLOT_HEIGHT = 500

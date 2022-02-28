@@ -1,27 +1,22 @@
-from analysis import *
+
+import numpy as np
+import pandas as pd
+
 from dashboard import *
-import os
+from utils import load_data, preprocess_dataframe
+from pages.page1 import create_global_metrics
+from pages.page2 import create_grouped_radar
+from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual
 
 os.environ['TZ'] = 'UTC'
 MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos',
         #'Benchmark'
         ]
-
+        
 def main():
     st.sidebar.title("Navegação")
     choice = st.sidebar.radio(
      "", MENU)
-
-    #with st.expander("Sobre"):
-    #    st.markdown("""
-    #        ####
-    #            Análise de performance de modelos de previsão de séries temporais
-    #        ###### Features
-    #            - MAPE e RMSE dos modelos
-    #            - Histogramas e Boxplots dos resíduos
-    #            - Função de Autocorrelação dos resíduos
-    #        ######""",
-    #unsafe_allow_html = True)
 
     if 'file_path' not in st.session_state:
         st.session_state['file_path'] = None
@@ -52,12 +47,7 @@ def main():
             
     with st.sidebar.expander("Leitura de arquivo"):    
         st.markdown('### Carregue o arquivo CSV 👇')
-        
-        @st.cache(allow_output_mutation=True)
-        def load_data(file):
-            df = pd.read_csv(file, parse_dates=True)
-            return df
-        
+
         file = st.file_uploader("",type=["csv"], key = 'uploader')
         
         if file is not None:
@@ -107,7 +97,7 @@ def main():
             except:
                 pass
         else:
-            st.warning('Erro ao carregar arquivo')
+            st.warning('Carregue arquivo')
             
     try:
         st.subheader('Intervalo:')
@@ -127,7 +117,6 @@ def main():
         df = df.loc[mask]
     
         try:
-            #df = df[df[data_group2]==chosen_group]
             df = preprocess_dataframe(df,
                                     time_col,
                                     y_true,
@@ -138,9 +127,7 @@ def main():
     except:
         pass
     
-    ########################################## TELA 1 ##########################################
-    if choice == 'Métricas Globais':
-        with st.expander("Dados"):
+    with st.expander("Dados"):
             try:
                 st.dataframe(df[[data_group,
                                  data_group2,
@@ -149,6 +136,10 @@ def main():
                                  y_predicted]+classes])
             except:
                 st.warning("Sem arquivo")
+                
+    ########################################## TELA 1 ##########################################
+    if choice == 'Métricas Globais':
+
         try:
             st.subheader(f'Métricas para o agrupamento: {chosen_group}')
             create_global_metrics(df,
@@ -180,9 +171,7 @@ def main():
             st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
                                     sorted(df[data_group].unique().tolist()))
             selected = st.session_state['selected']
-        except: 
-            pass      
-        try:
+
             mape_metrica = df[df[data_group]==selected].mape.clip(0,100).mean()
             
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
@@ -190,15 +179,13 @@ def main():
             
             p_mask = (df['acima20']==True) & (df[data_group]==selected)
             perc_acima20 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
-            
+        
             days_count = int(df[df[data_group]==selected].shape[0])
-            
             days_acima5 = int(days_count*perc_acima5)
             days_acima20 = int(days_count*perc_acima20)
             
             col1 = st.columns(5)
-            #col2 = st.columns(3)
-            delta2 = np.round(mape_metrica-5,2)
+            delta1 = np.round(mape_metrica-5,2)
 
             col1[0].metric(label=data_group,
                         value=f"{selected}",
@@ -207,7 +194,7 @@ def main():
                         value=f"{days_count} dias")
             col1[2].metric(label="MAPE",
                         value=f"{round(mape_metrica,2)}%",
-                        delta=f"{delta2}%",
+                        delta=f"{delta1}%",
                         delta_color="inverse")
             col1[3].metric(label="Dias Acima de 5%",
                         value=f"{round(100*perc_acima5,2)}%",
@@ -232,25 +219,29 @@ def main():
                 chosen = st.selectbox('',  sorted(df.columns.tolist()))
                 plot_seasonal_decompose(df, data_group, selected, time_col, col = chosen)
             except:
-                pass
+                st.warning('Selecione uma coluna numérica')
         
         try:   
             df = standard_residual(df, data_group, y_true, y_predicted)
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
+            
         try:   
             st.subheader("Resíduos")
-
             check_residuals(df,
                     time_col,
                     selected,
                     data_group
                 ) 
-            check_mape(df,time_col,selected,data_group) 
+            check_mape(df,
+                    time_col,
+                    selected,
+                    data_group
+                ) 
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
         
-        
+
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################

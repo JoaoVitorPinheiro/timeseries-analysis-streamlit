@@ -1,4 +1,3 @@
-from pages.page0 import create_initial_page
 from pages.page1 import create_page1
 from pages.page2 import create_page2
 from pages.page3 import create_page3

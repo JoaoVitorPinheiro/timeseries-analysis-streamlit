@@ -86,9 +86,17 @@ def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
         return 0   
     
 def RSE(y_true, y_predicted):
-    """
-    - y_true: Valores Observados
-    - y_predicted: Valores Previstos
+    """Calcula o Erro Médio Percentual(MPE) multiplicado por 100 para percentual
+    Parameters
+    ----------
+    y_true : pd.Series
+        Série de valores observados.
+    y_pred : pd.Series
+        Série de valores previstos.
+    Returns
+    ----------
+    float
+    mape: Mean Absolute Percentage Error (MAPE).
     """
     y_true = np.array(y_true)
     y_predicted = np.array(y_predicted)

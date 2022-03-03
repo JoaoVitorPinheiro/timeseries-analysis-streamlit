@@ -39,6 +39,6 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = np.where(data['mape']>5, True, False)
     data['acima20'] = np.where(data['mape']>20, True, False)
-    data[y_true+'_diff'] = data[y_true].diff()
+    #data[y_true+'_diff'] = data[y_true].diff()
     data = data.sort_values(by = time_col, ascending=True)
     return data

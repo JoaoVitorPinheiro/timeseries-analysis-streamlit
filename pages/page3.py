@@ -179,9 +179,7 @@ def check_mape(data: pd.DataFrame,
                     data_group: str
                     ):
     
-    st.subheader(f'MAPE do {data_group}')
-    data = generate_holidays(data, time_col, selected,data_group)
-    data['isholiday'] = np.where(data['feriado'].isna(), 0 , 1)
+    st.subheader(f'MAPE [mês/dia da semana] - {data_group}')
 
     dfplot = data.loc[data[data_group] == selected, [data_group,time_col,'mape','mpe']].sort_values(by = ['mape'], ascending=False)
     dfplot['dia_da_semana'] = pd.to_datetime(dfplot[time_col], format='%Y-%m-%d').dt.weekday.apply(nomear_dia)
@@ -230,23 +228,7 @@ def check_mape(data: pd.DataFrame,
             )
         )
         fig.update_traces(quartilemethod="exclusive")
-        st.plotly_chart(fig, use_container_width=True)     
-
-    with st.expander(f"Feriados (todos os {data_group})"):
-        st.dataframe(data[[data_group, time_col, 'mape', 'feriado']])
-        dfplot = data[data['isholiday'] == 1]
-        data = data[data[data_group] == selected]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Box(
-            x = dfplot["feriado"],
-            y = dfplot["mape"],
-            boxmean=True
-            )
-        )
-        fig.update_xaxes(tickangle=-45)
-        fig.update_traces(quartilemethod="exclusive")
-        st.plotly_chart(fig, use_container_width=True)  
+        st.plotly_chart(fig, use_container_width=True)      
     
 def check_rmse(data: pd.DataFrame,
                     time_col: str,
@@ -295,10 +277,7 @@ def check_rmse(data: pd.DataFrame,
         st.plotly_chart(fig, use_container_width=True)  
         
 def generate_holidays(data: pd.DataFrame,
-                   time_col:str,
-                   selected:str,
-                   data_group: str
-                    ):
+                    time_col:str):
 
     class Feriados_SP(AbstractHolidayCalendar):
         rules = [
@@ -333,6 +312,31 @@ def generate_holidays(data: pd.DataFrame,
     dferiado = dferiado.merge(feriados_sp, on = [time_col], how = 'left')
     
     return dferiado
+
+def check_holidays(data: pd.DataFrame,
+                    time_col: str,
+                    data_group: str,
+                    ):
+    data = generate_holidays(data, time_col)
+    data['isholiday'] = np.where(data['feriado'].isna(), 0 , 1)
+    
+    st.subheader(f'Feriados')
+    
+    with st.expander(f"Todos os {data_group}s"):
+        st.dataframe(data[[data_group, time_col, 'mape', 'feriado']])
+        dfplot = data[data['isholiday'] == 1]
+        #data = data[data[data_group] == selected]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Box(
+            x = dfplot["feriado"],
+            y = dfplot["mape"],
+            boxmean=True
+            )
+        )
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)
 
 def plot_seasonal_decompose(df, data_group, selected, time_col, col, decompose_model = 'additive', interpol_method='linear', shared_y=False):
     """Realiza decomposição automática da série temporal e imprime os quatro gráficos resultantes

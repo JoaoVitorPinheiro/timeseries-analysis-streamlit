@@ -1,12 +1,12 @@
-
 import numpy as np
 import pandas as pd
 
 from dashboard import *
 from utils import load_data, preprocess_dataframe
+
 from pages.page1 import create_global_metrics
 from pages.page2 import create_grouped_radar
-from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual
+from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual, check_holidays
 
 os.environ['TZ'] = 'UTC'
 MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos',
@@ -128,18 +128,17 @@ def main():
         pass
     
     with st.expander("Dados"):
-            try:
-                st.dataframe(df[[data_group,
-                                 data_group2,
-                                 time_col,
-                                 y_true,
-                                 y_predicted]+classes])
-            except:
-                st.warning("Sem arquivo")
+        try:
+            st.dataframe(df[[data_group,
+                                data_group2,
+                                time_col,
+                                y_true,
+                                y_predicted]+classes])
+        except:
+            st.warning("Sem arquivo")
                 
     ########################################## TELA 1 ##########################################
     if choice == 'Métricas Globais':
-
         try:
             st.subheader(f'Métricas para o agrupamento: {chosen_group}')
             create_global_metrics(df,
@@ -238,10 +237,15 @@ def main():
                     selected,
                     data_group
                 ) 
+            
         except:
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
         
-
+        # CHECKING
+        check_holidays(df,
+                    time_col,
+                    data_group
+            )
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################

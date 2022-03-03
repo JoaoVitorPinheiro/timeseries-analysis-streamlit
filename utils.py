@@ -27,11 +27,13 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = data[time_col].dt.date
     nan_mask = (data[y_true].isna())|(data[y_predicted].isna())
     data = data[~nan_mask]   # remove some nan's only
+    #Clip para previsões negativas
+    data[y_predicted] = np.where(data[y_predicted]<0, 0, data[y_predicted])
     data['mape'] = MAPE(data[y_true],data[y_predicted])
     data['rmse'] = RMSE(data[y_true],data[y_predicted])
 
-    # Limiar do MAPE para evitar distorções
-    #data['mape'] = np.where(data['mape']>100, np.nan, data['mape'])
+    #Limiar do MAPE para evitar distorções
+    data['mape'] = np.where(data['mape']>100, 100, data['mape'])
 
     data['mpe'] = MPE(data[y_true],data[y_predicted])
     data['residuo'] = data[y_true] - data[y_predicted]

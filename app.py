@@ -175,13 +175,13 @@ def main():
             
             p_mask = (df['acima5']==True) & (df[data_group]==selected)
             perc_acima5 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
+            days_acima5 = df.loc[p_mask].shape[0]
             
             p_mask = (df['acima20']==True) & (df[data_group]==selected)
             perc_acima20 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
+            days_acima20 = df.loc[p_mask].shape[0]
         
-            days_count = int(df[df[data_group]==selected].shape[0])
-            days_acima5 = int(days_count*perc_acima5)
-            days_acima20 = int(days_count*perc_acima20)
+            days_count = df[df[data_group]==selected].shape[0]
             
             col1 = st.columns(5)
             delta1 = np.round(mape_metrica-5,2)

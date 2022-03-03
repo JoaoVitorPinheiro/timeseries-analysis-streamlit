@@ -9,6 +9,7 @@ from pages.page3 import create_page3
 
 from pages import MENU
 
+# MENU ALTERNATIVO DE TESTE
 def main():
     choice = st.sidebar.radio("", MENU)
     df, time_col, data_group, y_true, y_predicted = load_csv_file()

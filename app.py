@@ -182,7 +182,7 @@ def main():
             days_acima20 = df.loc[p_mask].shape[0]
         
             days_count = df[df[data_group]==selected].shape[0]
-            
+        
             col1 = st.columns(5)
             delta1 = np.round(mape_metrica-5,2)
 

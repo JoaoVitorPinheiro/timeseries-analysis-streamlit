@@ -18,7 +18,7 @@ def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     try:
         residual = np.abs(y_true - y_predicted)
         mape = np.where(y_predicted!=0, residual/y_predicted, np.nan)
-        mape = np.where((residual==0) & (y_predicted==0), 0, mape)
+        mape = np.where((residual==0) & (y_predicted==0), np.nan, mape)
         # mape = np.where(mape > 0.5, 0.1, mape)
         return 100*np.abs(mape)
     except:

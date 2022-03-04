@@ -429,7 +429,7 @@ def plot_series(data: pd.DataFrame,
                             y=dfplot[y_true]-dfplot[y_predicted],
                             mode='lines',
                             name='Resíduo',
-                            line_color='rgb(37, 206, 209)',
+                            line_color='rgb(169, 169, 169)',
                             )
                 )
     fig.update_xaxes(

@@ -19,7 +19,6 @@ def MAPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
         residual = np.abs(y_true - y_predicted)
         mape = np.where(y_predicted!=0, residual/y_predicted, np.nan)
         mape = np.where((residual==0) & (y_predicted==0), np.nan, mape)
-        # mape = np.where(mape > 0.5, 0.1, mape)
         return 100*np.abs(mape)
     except:
         return 0  
@@ -76,15 +75,14 @@ def MPE(y_true: pd.Series, y_predicted: pd.Series) -> float:
     mape: Mean Absolute Percentage Error (MAPE).
     """
     try:
-        residual = (y_true - y_predicted)
+        # esse cálculo é feito em função do desvio em relação ao previsto
+        residual = (y_predicted - y_true)
         mpe = np.where(y_predicted!=0, residual/y_predicted, np.nan)
-        mpe = np.where((residual==0) & (y_predicted==0), 0, mpe)
-        #mpe = np.where(mpe > 0.5, 0.1, mpe)
-        
+        mpe = np.where((residual==0) & (y_predicted==0), np.nan, mpe)
         return mpe*100
     except:
         return 0   
-    
+
 def RSE(y_true, y_predicted):
     """Calcula o Erro Médio Percentual(MPE) multiplicado por 100 para percentual
     Parameters

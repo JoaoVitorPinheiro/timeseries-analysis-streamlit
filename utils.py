@@ -26,19 +26,14 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[time_col] = pd.to_datetime(data[time_col], format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     nan_mask = (data[y_true].isna())|(data[y_predicted].isna())
-    data = data[~nan_mask]   # remove some nan's only
-    #Clip para previsões negativas
-    data[y_predicted] = np.where(data[y_predicted]<0, 0, data[y_predicted])
-    data['mape'] = MAPE(data[y_true],data[y_predicted])
+    data = data[~nan_mask]   # remove nan's 
+    data[y_predicted] = np.where(data[y_predicted]<0, 0, data[y_predicted])    #Clip para previsões negativas
     data['rmse'] = RMSE(data[y_true],data[y_predicted])
-
-    #Limiar do MAPE para evitar distorções
-    data['mape'] = np.where(data['mape']>100, 100, data['mape'])
-
     data['mpe'] = MPE(data[y_true],data[y_predicted])
+    data['mape'] = np.abs(data['mpe'])
+    data['mape'] = np.where(data['mape']>100, 100, data['mape'])     #Limiar do MAPE para evitar distorções
     data['residuo'] = data[y_true] - data[y_predicted]
-    data['acima5'] = np.where(data['mape']>5, True, False)
-    data['acima20'] = np.where(data['mape']>20, True, False)
-    #data[y_true+'_diff'] = data[y_true].diff()
+    data['acima5'] = (data['mape']>5).astype(int)
+    data['acima20'] = (data['mape']>20).astype(int)
     data = data.sort_values(by = time_col, ascending=True)
     return data

@@ -12,7 +12,7 @@ WEEKDAY = ["Segunda", "Terça",
 nomear_dia = lambda x: WEEKDAY[x]
 nomear_mes = lambda x: MESES[x-1]
 
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True, persist = True)
 def load_data(file):
     df = pd.read_csv(file, parse_dates=True)
     return df

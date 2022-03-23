@@ -1,6 +1,7 @@
 from time import time
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go # 
 
 from dashboard import *
 from utils import load_data, preprocess_dataframe
@@ -47,6 +48,9 @@ def main():
     if 'selected' not in st.session_state:
         st.session_state['selected'] = None
     
+    if 'df' not in st.session_state:
+        st.session_state['df'] = None
+        
     if 'updated_df' not in st.session_state:
         st.session_state['updated_df'] = None
         
@@ -65,19 +69,19 @@ def main():
             
             #'Dados', file_details
             
-            df = load_data(file)
+            st.session_state['df'] = load_data(file)
             #with st.expander("Informações dos dados:"):
             #    st.write(file_details)
 
-            st.session_state['id'] = st.selectbox("Identificador:", df.columns)
-            st.session_state['time_col'] = st.selectbox("Coluna Temporal:", df.columns)
+            st.session_state['id'] = st.selectbox("Identificador:", st.session_state['df'].columns)
+            st.session_state['time_col'] = st.selectbox("Coluna Temporal:", st.session_state['df'].columns)
             # TROQUEI O PREVISTO PELO REAL
-            st.session_state['real'] = st.selectbox("Real (QDR):", df.columns)
-            st.session_state['previsto'] = st.selectbox("Previsto (QDP):", df.columns)
-            st.session_state['classes'] = st.multiselect("Classes:", df.columns)
-            st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+df.columns.tolist())
+            st.session_state['real'] = st.selectbox("Real (QDR):", st.session_state['df'].columns)
+            st.session_state['previsto'] = st.selectbox("Previsto (QDP):", st.session_state['df'].columns)
+            st.session_state['classes'] = st.multiselect("Classes:", st.session_state['df'].columns)
+            st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+st.session_state['df'].columns.tolist())
             
-            df['NÃO'] = 0
+            st.session_state['df']['NÃO'] = 0
             
             data_group = st.session_state['id']
             time_col = st.session_state['time_col']
@@ -86,24 +90,24 @@ def main():
             classes = st.session_state['classes']
             data_group2 = st.session_state['agrupamento']
             
-            st.session_state['grouped_df'] = df[[data_group,
-                                                 data_group2,
-                                                 time_col,
-                                                 y_true,
-                                                 y_predicted
-                                                 ]]
+            st.session_state['grouped_df'] = st.session_state['df'][[data_group,
+                                                                     data_group2,
+                                                                     time_col,
+                                                                     y_true,
+                                                                     y_predicted]]
             
             st.session_state['chosengroup'] = st.selectbox(f"Selecione o agrupamento:",
-                            sorted(df[data_group2].unique().tolist()))
+                            sorted(st.session_state['df'][data_group2].unique().tolist()))
             chosen_group = st.session_state['chosengroup']
             
-            df = df[df[data_group2]==chosen_group]  
+            st.session_state['df'] = st.session_state['df'][st.session_state['df'][data_group2]==chosen_group]  
                 
             try:
-                df = preprocess_dataframe(df,
-                                    time_col,
-                                    y_true,
-                                    y_predicted)
+                st.session_state['df'] = preprocess_dataframe(st.session_state['df'],
+                                                              time_col,
+                                                              y_true,
+                                                              y_predicted)
+                
             except:
                 pass
         else:
@@ -112,9 +116,9 @@ def main():
     try:
         st.subheader('Intervalo:')
         start_date, end_date = st.slider('',
-                            value=[df[time_col].min(), df[time_col].max()],
-                            max_value = df[time_col].max(),
-                            min_value = df[time_col].min(),
+                            value=[st.session_state['df'][time_col].min(), st.session_state['df'][time_col].max()],
+                            max_value = st.session_state['df'][time_col].max(),
+                            min_value = st.session_state['df'][time_col].min(),
                             key='first')
         
         if start_date <= end_date:
@@ -123,12 +127,12 @@ def main():
             st.warning('Error: Fim < Inicio.')
 
         st.write('Período:', start_date, '-', end_date)
-        mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
-        df = df.loc[mask]
+        mask = (st.session_state['df'][time_col] >= start_date) & (st.session_state['df'][time_col] <= end_date)
+        st.session_state['df'] = st.session_state['df'].loc[mask]
     
         #try: df = preprocess_dataframe(df,time_col,y_true,y_predicted)
         #except: pass
-        st.session_state['updated_df'] = df.copy()
+        st.session_state['updated_df'] = st.session_state['df'].copy()
     
     except:
         pass
@@ -225,7 +229,7 @@ def main():
         
         with st.expander('Decomposição Clássica'):
             try:
-                chosen = st.selectbox('',  sorted(df.columns.tolist()))
+                chosen = st.selectbox('',  sorted(st.session_state['updated_df'].columns.tolist()))
                 
                 plot_seasonal_decompose(st.session_state['updated_df'],
                                         data_group,
@@ -236,7 +240,7 @@ def main():
                 st.warning('Selecione uma coluna numérica')
         
         try:   
-            df = standard_residual(st.session_state['updated_df'], data_group, y_true, y_predicted)
+            st.session_state['updated_df'] = standard_residual(st.session_state['updated_df'], data_group, y_true, y_predicted)
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
             
@@ -265,7 +269,6 @@ def main():
         
     ########################################## TELA 4 ##########################################
     elif choice == 'Benchmark':
-        import plotly.graph_objects as go
         
         chosen_col = st.selectbox('Categoria', classes)
         

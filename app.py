@@ -337,7 +337,9 @@ def main():
         fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
         fig = format_fig(fig, '', x_title=time_col, y_title='Resíduo')
         st.plotly_chart(fig, use_container_width=True)
-            
+
+        with st.expander('tabela'):
+            st.dataframe(dfplot)
         fig = go.Figure()
         dfplot['lim_sup'] = 5
         dfplot['lim_inf'] = -1*dfplot['lim_sup']

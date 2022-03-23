@@ -270,11 +270,11 @@ def main():
     ########################################## TELA 4 ##########################################
     elif choice == 'Benchmark':
         
-        chosen_col = st.selectbox('Categoria', classes)
+        st.session_state['chosen_col'] = st.selectbox('Categoria', classes)
         
         benchmark_df = st.session_state['updated_df']
         benchmark_df[st.session_state['time_col']] = pd.to_datetime(benchmark_df[st.session_state['time_col']])
-        benchmark_df = benchmark_df.groupby([pd.Grouper(key = st.session_state['time_col'], freq = 'D'), chosen_col]).sum().reset_index()
+        benchmark_df = benchmark_df.groupby([pd.Grouper(key = st.session_state['time_col'], freq = 'D'), st.session_state['chosen_col'] ]).sum().reset_index()
         benchmark_df = benchmark_df.reset_index()
         benchmark_df['residuo'] = benchmark_df[st.session_state['previsto']] - benchmark_df[st.session_state['real']]
         benchmark_df['mpe'] = 100*(benchmark_df['residuo']/benchmark_df[st.session_state['previsto']])
@@ -282,9 +282,9 @@ def main():
         benchmark_df['acima5'] = np.where(benchmark_df['mape']>5, 1, 0)
         benchmark_df['acima20'] = np.where(benchmark_df['mape']>20, 1, 0)
 
-        item = st.selectbox('Classe', benchmark_df[chosen_col].unique().tolist())
+        st.sessionstate['chosen_item'] = st.selectbox('Classe', benchmark_df[st.session_state['chosen_col']].unique().tolist())
         
-        dfplot = benchmark_df.loc[benchmark_df[chosen_col] == item]
+        dfplot = benchmark_df.loc[benchmark_df[st.session_state['chosen_col'] ] == st.sessionstate['chosen_item']]
     
         days_count = dfplot.shape[0]
         mape_metrica = dfplot.mape.clip(0,100).mean()
@@ -300,7 +300,7 @@ def main():
         delta1 = np.round(mape_metrica-5,2)
 
         col2[0].metric(label=data_group,
-                    value= item,
+                    value= st.sessionstate['chosen_item'],
                     delta=f"")
         
         col2[1].metric(label="Período",
@@ -343,7 +343,7 @@ def main():
 
         with st.expander('tabela'):
             st.dataframe(dfplot[[st.session_state['time_col'],
-                                 chosen_col,
+                                 st.sessionstate['chosen_col'],
                                  st.session_state['real'],
                                  st.session_state['previsto'],
                                  'mpe',

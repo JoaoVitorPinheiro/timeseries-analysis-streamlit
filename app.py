@@ -56,6 +56,7 @@ def main():
         
     if 'grouped_df' not in st.session_state:
         st.session_state['grouped_df'] = None
+    
         
     with st.sidebar.expander("Leitura de arquivo"):    
         st.markdown('### Carregue o arquivo CSV 👇')
@@ -268,6 +269,12 @@ def main():
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################
+    if 'chosen_col' not in st.session_state:
+        st.session_state['chosen_col'] = None
+    
+    if 'chosen_item' not in st.session_state:
+        st.session_state['chosen_item'] = None
+        
     elif choice == 'Benchmark':
         
         st.session_state['chosen_col'] = st.selectbox('Categoria', classes)

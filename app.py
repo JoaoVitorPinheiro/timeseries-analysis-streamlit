@@ -1,3 +1,4 @@
+from time import time
 import numpy as np
 import pandas as pd
 
@@ -9,9 +10,10 @@ from pages.page2 import create_grouped_radar
 from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual, check_holidays
 
 os.environ['TZ'] = 'UTC'
-MENU = ['Métricas Globais', 'Agrupamentos', 'Análise de Resíduos',
-        #'Benchmark'
-        ]
+MENU = ['Métricas Globais',
+        'Agrupamentos',
+        'Análise de Resíduos',
+        'Benchmark']
         
 def main():
     st.sidebar.title("Navegação")
@@ -46,10 +48,10 @@ def main():
         st.session_state['selected'] = None
     
     if 'updated_df' not in st.session_state:
-        st.session_state['file_path'] = None
+        st.session_state['updated_df'] = None
         
     if 'grouped_df' not in st.session_state:
-        st.session_state['file_path'] = None
+        st.session_state['grouped_df'] = None
         
     with st.sidebar.expander("Leitura de arquivo"):    
         st.markdown('### Carregue o arquivo CSV 👇')
@@ -262,11 +264,122 @@ def main():
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################
-    #elif choice == 'Benchmark':
+    elif choice == 'Benchmark':
+        import plotly.graph_objects as go
+
+        cols = [st.session_state['time_col'], st.session_state['real'], st.session_state['previsto']]+classes
+        benchmark_df = st.session_state['updated_df'][cols]
+        
+        chosen_col = st.selectbox('Categoria', classes)
+        
+        benchmark_df[st.session_state['time_col']] = pd.to_datetime(benchmark_df[st.session_state['time_col']])
+        benchmark_df = benchmark_df.groupby([pd.Grouper(key = st.session_state['time_col'], freq = 'D'), chosen_col]).sum().reset_index()
+        benchmark_df = benchmark_df.reset_index()
+        benchmark_df['residuo'] = benchmark_df[st.session_state['previsto']] - benchmark_df[st.session_state['real']]
+        benchmark_df['mpe'] = 100*(benchmark_df['residuo']/benchmark_df[st.session_state['previsto']])
+        benchmark_df['mape'] = np.abs(benchmark_df['mpe'])
+        benchmark_df['acima5'] = np.where(benchmark_df['mape']>5, 1, 0)
+        benchmark_df['acima20'] = np.where(benchmark_df['mape']>20, 1, 0)
+
+        item = st.selectbox('Classe', benchmark_df[chosen_col].unique().tolist())
+        
+        dfplot = benchmark_df.loc[benchmark_df[chosen_col] == item]
+    
+        days_count = dfplot.shape[0]
+        mape_metrica = dfplot.mape.clip(0,100).mean()
+        acima5_mask = (dfplot['acima5']==True)
+        days_acima5 = dfplot.loc[acima5_mask].shape[0]
+        perc_acima5 = days_acima5/days_count
+        
+        acima20_mask = (dfplot['acima20']==True)
+        days_acima20 = dfplot.loc[acima20_mask].shape[0] 
+        perc_acima20 = days_acima20/days_count
+        
+        col2 = st.columns(5)
+        delta1 = np.round(mape_metrica-5,2)
+
+        col2[0].metric(label=data_group,
+                    value= item,
+                    delta=f"")
+        
+        col2[1].metric(label="Período",
+                    value=f"{days_count} dias")
+        
+        col2[2].metric(label="MAPE",
+                    value=f"{round(mape_metrica,2)}%",
+                    delta=f"{delta1}%",
+                    delta_color="inverse")
+        
+        col2[3].metric(label="Dias Acima de 5%",
+                    value=f"{round(100*perc_acima5,2)}%",
+                    delta=f"{days_acima5} dias",
+                    delta_color='off')
+        
+        col2[4].metric(label="Dias Acima de 20%",
+                    value=f"{round(100*perc_acima20,2)}%",
+                    delta=f"{days_acima20} dias",
+                    delta_color='off')
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scattergl(x= dfplot[st.session_state['time_col']],
+                                    y= dfplot[st.session_state['real']],
+                                    mode='lines',
+                                    line=dict(color='rgb(32,4,114)'),
+                                    name='Real'
+                                    )
+            )
+        fig.add_trace(go.Scattergl(x= dfplot[st.session_state['time_col']],
+                                    y= dfplot[st.session_state['previsto']],
+                                    mode='lines',
+                                    line=dict(color='rgb(234, 82, 111)'),
+                                    name='Previsto'
+                                    )
+            )
+        fig.update_xaxes(title_text="Data")
+        fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
+        fig = format_fig(fig, '', x_title=time_col, y_title='Resíduo')
+        st.plotly_chart(fig, use_container_width=True)
+            
+        fig = go.Figure()
+        dfplot['lim_sup'] = 5
+        dfplot['lim_inf'] = -1*dfplot['lim_sup']
+        fig.add_trace(go.Scattergl(x=dfplot[time_col],
+                                    y=dfplot['mpe'],
+                                    mode='markers',
+                                    line=dict(color='rgb(32,4,114)'),
+                                    name='MPE'
+                                    )
+        )
+        fig.add_trace(go.Scattergl(
+                    y=dfplot['lim_sup'], 
+                    x=dfplot[time_col],
+                    line=dict(color='red', dash = 'dash'),
+                    name='+5%'
+                    )
+        )
+        fig.add_trace(go.Scattergl(
+                    y=dfplot['lim_inf'], 
+                    x=dfplot[time_col],
+                    line=dict(color='red', dash = 'dash'),
+                    name='-5%'
+                    )
+        )
+        fig.update_xaxes(title_text="Data")
+        fig.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
+        fig = format_fig(fig, '', x_title=time_col, y_title='Erro Médio Percentual')
+        st.plotly_chart(fig, use_container_width=True)
+
+        #st.markdown("""
+        #        <span style="color:rgb(32,4,114)"> <font size="5">MAPE</font></span>""",
+        #unsafe_allow_html = True)
+        #fig = go.Figure()
     # Recebe o modelo 2
     # Abre uma janela para leitura de dados
     #    pass     
+            
 if __name__ == "__main__":
     set_streamlit()
     set_page_container_style()
     main()
+
+

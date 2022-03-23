@@ -48,6 +48,12 @@ def main():
     if 'selected' not in st.session_state:
         st.session_state['selected'] = None
     
+    if 'chosen_col' not in st.session_state:
+        st.session_state['chosen_col'] = None
+    
+    if 'chosen_item' not in st.session_state:
+        st.session_state['chosen_item'] = None
+            
     if 'df' not in st.session_state:
         st.session_state['df'] = None
         
@@ -269,14 +275,10 @@ def main():
         #check_rmse(df,time_col,selected,data_group) 
         
     ########################################## TELA 4 ##########################################
-    if 'chosen_col' not in st.session_state:
-        st.session_state['chosen_col'] = None
     
-    if 'chosen_item' not in st.session_state:
-        st.session_state['chosen_item'] = None
         
     elif choice == 'Benchmark':
-        
+            
         st.session_state['chosen_col'] = st.selectbox('Categoria', classes)
         
         benchmark_df = st.session_state['updated_df']

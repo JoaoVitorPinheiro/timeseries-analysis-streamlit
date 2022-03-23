@@ -266,12 +266,10 @@ def main():
     ########################################## TELA 4 ##########################################
     elif choice == 'Benchmark':
         import plotly.graph_objects as go
-
-        cols = [st.session_state['time_col'], st.session_state['real'], st.session_state['previsto']]+classes
-        benchmark_df = st.session_state['updated_df'][cols]
         
         chosen_col = st.selectbox('Categoria', classes)
         
+        benchmark_df = st.session_state['updated_df']
         benchmark_df[st.session_state['time_col']] = pd.to_datetime(benchmark_df[st.session_state['time_col']])
         benchmark_df = benchmark_df.groupby([pd.Grouper(key = st.session_state['time_col'], freq = 'D'), chosen_col]).sum().reset_index()
         benchmark_df = benchmark_df.reset_index()

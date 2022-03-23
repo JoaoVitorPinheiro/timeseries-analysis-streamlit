@@ -44,7 +44,13 @@ def main():
     
     if 'selected' not in st.session_state:
         st.session_state['selected'] = None
-            
+    
+    if 'updated_df' not in st.session_state:
+        st.session_state['file_path'] = None
+        
+    if 'grouped_df' not in st.session_state:
+        st.session_state['file_path'] = None
+        
     with st.sidebar.expander("Leitura de arquivo"):    
         st.markdown('### Carregue o arquivo CSV 👇')
 
@@ -78,11 +84,13 @@ def main():
             classes = st.session_state['classes']
             data_group2 = st.session_state['agrupamento']
             
-            grouped = df[[data_group,
-                          data_group2,
-                          time_col,
-                          y_true,
-                          y_predicted]]
+            st.session_state['grouped_df'] = df[[data_group,
+                                                 data_group2,
+                                                 time_col,
+                                                 y_true,
+                                                 y_predicted
+                                                 ]]
+            
             st.session_state['chosengroup'] = st.selectbox(f"Selecione o agrupamento:",
                             sorted(df[data_group2].unique().tolist()))
             chosen_group = st.session_state['chosengroup']
@@ -116,20 +124,16 @@ def main():
         mask = (df[time_col] >= start_date) & (df[time_col] <= end_date)
         df = df.loc[mask]
     
-        try:
-            df = preprocess_dataframe(df,
-                                    time_col,
-                                    y_true,
-                                    y_predicted)
-        except:
-            pass
+        #try: df = preprocess_dataframe(df,time_col,y_true,y_predicted)
+        #except: pass
+        st.session_state['updated_df'] = df.copy()
     
     except:
         pass
     
     with st.expander("Dados"):
         try:
-            st.dataframe(df[[data_group,
+            st.dataframe(st.session_state['updated_df'][[data_group,
                                 data_group2,
                                 time_col,
                                 y_true,
@@ -141,7 +145,8 @@ def main():
     if choice == 'Métricas Globais':
         try:
             st.subheader(f'Métricas para o agrupamento: {chosen_group}')
-            create_global_metrics(df,
+            
+            create_global_metrics(st.session_state['updated_df'],
                                   time_col,
                                   data_group,
                                   classes,
@@ -154,7 +159,7 @@ def main():
     elif choice == 'Agrupamentos':
         st.subheader(f'Comparação dos agrupamentos')
         try:
-            create_grouped_radar(grouped,
+            create_grouped_radar(st.session_state['grouped_df'],
                                  data_group,
                                  data_group2,
                                  time_col,
@@ -168,26 +173,29 @@ def main():
           
         try:
             st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
-                                    sorted(df[data_group].unique().tolist()))
-            selected = st.session_state['selected']
+                                    sorted(st.session_state['updated_df'][data_group].unique().tolist()))
 
-            mape_metrica = df[df[data_group]==selected].mape.clip(0,100).mean()
+            days_count = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].shape[0]
             
-            p_mask = (df['acima5']==True) & (df[data_group]==selected)
-            perc_acima5 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
-            days_acima5 = df.loc[p_mask].shape[0]
+            mape_metrica = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].mape.clip(0,100).mean()
             
-            p_mask = (df['acima20']==True) & (df[data_group]==selected)
-            perc_acima20 = df.loc[p_mask].shape[0]/df[df[data_group]==selected].shape[0]
-            days_acima20 = df.loc[p_mask].shape[0]
-        
-            days_count = df[df[data_group]==selected].shape[0]
+            acima5_mask = (st.session_state['updated_df']['acima5']==True) & \
+                (st.session_state['updated_df'][data_group]==st.session_state['selected'])
+                
+            days_acima5 = st.session_state['updated_df'].loc[acima5_mask].shape[0]
+            perc_acima5 = days_acima5/days_count
+            
+            acima20_mask = (st.session_state['updated_df']['acima20']==True) & \
+                (st.session_state['updated_df'][data_group]==st.session_state['selected'])
+            
+            days_acima20 = st.session_state['updated_df'].loc[acima20_mask].shape[0] 
+            perc_acima20 = days_acima20/days_count
         
             col1 = st.columns(5)
             delta1 = np.round(mape_metrica-5,2)
 
             col1[0].metric(label=data_group,
-                        value=f"{selected}",
+                        value= str(st.session_state['selected']),
                         delta=f"")
             col1[1].metric(label="Período",
                         value=f"{days_count} dias")
@@ -204,37 +212,42 @@ def main():
                         delta=f"{days_acima20} dias",
                         delta_color='off')
             
-            plot_series(df,
+            plot_series(st.session_state['updated_df'],
                     st.session_state['time_col'] ,
                     st.session_state['real'] ,
                     st.session_state['previsto'] ,
                     st.session_state['id'] ,
-                    selected)
+                    st.session_state['selected'])
         except:
             pass
         
         with st.expander('Decomposição Clássica'):
             try:
                 chosen = st.selectbox('',  sorted(df.columns.tolist()))
-                plot_seasonal_decompose(df, data_group, selected, time_col, col = chosen)
+                
+                plot_seasonal_decompose(st.session_state['updated_df'],
+                                        data_group,
+                                        st.session_state['selected'],
+                                        time_col,
+                                        col = chosen)
             except:
                 st.warning('Selecione uma coluna numérica')
         
         try:   
-            df = standard_residual(df, data_group, y_true, y_predicted)
+            df = standard_residual(st.session_state['updated_df'], data_group, y_true, y_predicted)
         except: 
             st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
             
         try:   
             st.subheader("Resíduos")
-            check_residuals(df,
+            check_residuals(st.session_state['updated_df'],
                     time_col,
-                    selected,
+                    st.session_state['selected'],
                     data_group
                 ) 
-            check_mape(df,
+            check_mape(st.session_state['updated_df'],
                     time_col,
-                    selected,
+                    st.session_state['selected'],
                     data_group
                 ) 
             
@@ -242,7 +255,7 @@ def main():
             st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
         
         # CHECKING
-        check_holidays(df,
+        check_holidays(st.session_state['updated_df'],
                     time_col,
                     data_group
             )

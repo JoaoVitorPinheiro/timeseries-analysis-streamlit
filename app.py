@@ -291,7 +291,7 @@ def main():
         benchmark_df['acima5'] = np.where(benchmark_df['mape']>5, 1, 0)
         benchmark_df['acima20'] = np.where(benchmark_df['mape']>20, 1, 0)
 
-        st.sessionstate['chosen_item'] = st.selectbox('Classe', benchmark_df[st.session_state['chosen_col']].unique().tolist())
+        st.session_state['chosen_item'] = st.selectbox('Classe', benchmark_df[st.session_state['chosen_col']].unique().tolist())
         
         dfplot = benchmark_df.loc[benchmark_df[st.session_state['chosen_col'] ] == st.sessionstate['chosen_item']]
     

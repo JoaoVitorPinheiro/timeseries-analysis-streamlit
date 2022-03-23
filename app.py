@@ -339,7 +339,15 @@ def main():
         st.plotly_chart(fig, use_container_width=True)
 
         with st.expander('tabela'):
-            st.dataframe(dfplot)
+            st.dataframe(dfplot[[st.session_state['time_col'],
+                                 chosen_col,
+                                 st.session_state['real'],
+                                 st.session_state['previsto'],
+                                 'mpe',
+                                 'mape',
+                                 'acima5',
+                                 'acima20'
+                                 ]])
         fig = go.Figure()
         dfplot['lim_sup'] = 5
         dfplot['lim_inf'] = -1*dfplot['lim_sup']

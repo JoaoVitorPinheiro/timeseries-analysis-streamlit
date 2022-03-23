@@ -293,7 +293,7 @@ def main():
 
         st.session_state['chosen_item'] = st.selectbox('Classe', benchmark_df[st.session_state['chosen_col']].unique().tolist())
         
-        dfplot = benchmark_df.loc[benchmark_df[st.session_state['chosen_col'] ] == st.sessionstate['chosen_item']]
+        dfplot = benchmark_df.loc[benchmark_df[st.session_state['chosen_col'] ] == st.session_state['chosen_item']]
     
         days_count = dfplot.shape[0]
         mape_metrica = dfplot.mape.clip(0,100).mean()
@@ -309,7 +309,7 @@ def main():
         delta1 = np.round(mape_metrica-5,2)
 
         col2[0].metric(label=data_group,
-                    value= st.sessionstate['chosen_item'],
+                    value= st.session_state['chosen_item'],
                     delta=f"")
         
         col2[1].metric(label="Período",
@@ -352,7 +352,7 @@ def main():
 
         with st.expander('tabela'):
             st.dataframe(dfplot[[st.session_state['time_col'],
-                                 st.sessionstate['chosen_col'],
+                                 st.session_state['chosen_col'],
                                  st.session_state['real'],
                                  st.session_state['previsto'],
                                  'mpe',

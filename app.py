@@ -115,7 +115,7 @@ def main():
         else:
             st.warning('Carregue arquivo')
     
-    if (('df' in st.session_state) & ~(st.session_state['df'] is None)):
+    if st.session_state['file_path']:
         try:
             st.subheader('Intervalo:')
             start_date, end_date = st.slider('',

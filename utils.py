@@ -14,9 +14,14 @@ nomear_mes = lambda x: MESES[x-1]
 
 @st.cache(allow_output_mutation=True, persist = True)
 def load_data(file):
-    df = pd.read_csv(file, parse_dates=True)
-    return df
-            
+    try:
+        return pd.read_csv(file, parse_dates=True)
+    except:
+        st.error(
+            "This file can't be converted into a dataframe. Please import a csv file with a valid separator."
+        )
+        st.stop()
+        
 def preprocess_dataframe(data: pd.DataFrame,
                          time_col: str,
                          y_true: str,

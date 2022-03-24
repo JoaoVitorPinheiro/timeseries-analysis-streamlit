@@ -17,10 +17,7 @@ MENU = ['Métricas Globais',
         'Benchmark']
         
 def main():
-    st.sidebar.title("Navegação")
-    choice = st.sidebar.radio(
-     "", MENU)
-
+    
     # Resume to iterator
     if 'file_path' not in st.session_state:
         st.session_state['file_path'] = None
@@ -63,6 +60,14 @@ def main():
         
     if 'grouped_df' not in st.session_state:
         st.session_state['grouped_df'] = None
+    
+    if 'navigator' not in st.session_state:
+        st.session_state['navigator'] = None
+            
+    st.sidebar.title("Navegação")
+    st.session_state['navigator'] = st.sidebar.radio(
+     "", MENU)
+    choice = st.session_state['navigator']
     
     with st.sidebar.expander("Leitura de arquivo"):    
         st.markdown('### Carregue o arquivo CSV 👇')

@@ -15,8 +15,7 @@ MENU = ['Métricas Globais',
         'Agrupamentos',
         'Análise de Resíduos',
         'Benchmark']
-
-@st.cache        
+     
 def main():
     
     # Resume to iterator
@@ -138,9 +137,6 @@ def main():
             st.write('Período:', start_date, '-', end_date)
             mask = (st.session_state['df'][time_col] >= start_date) & (st.session_state['df'][time_col] <= end_date)
             st.session_state['df'] = st.session_state['df'].loc[mask]
-        
-            #try: df = preprocess_dataframe(df,time_col,y_true,y_predicted)
-            #except: pass
             st.session_state['updated_df'] = st.session_state['df'].copy()
         
         except:

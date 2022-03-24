@@ -11,6 +11,7 @@ from pages.page2 import create_grouped_radar
 from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual, check_holidays
 
 os.environ['TZ'] = 'UTC'
+
 MENU = ['Métricas Globais',
         'Agrupamentos',
         'Análise de Resíduos',
@@ -19,6 +20,8 @@ MENU = ['Métricas Globais',
 def main():
     
     # Resume to iterator
+    st_vars = []
+    
     if 'file_path' not in st.session_state:
         st.session_state['file_path'] = None
             
@@ -86,7 +89,7 @@ def main():
             # TROQUEI O PREVISTO PELO REAL
             st.session_state['real'] = st.selectbox("Real (QDR):", st.session_state['df'].columns)
             st.session_state['previsto'] = st.selectbox("Previsto (QDP):", st.session_state['df'].columns)
-            st.session_state['classes'] = st.multiselect("Classes:", st.session_state['df'].columns)
+            st.session_state['classes'] = st.selectbox("Classes:", st.session_state['df'].columns)
             st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+st.session_state['df'].columns.tolist())
             st.session_state['df']['NÃO'] = 0
             
@@ -148,7 +151,7 @@ def main():
                                     data_group2,
                                     time_col,
                                     y_true,
-                                    y_predicted]+classes])
+                                    y_predicted]+[classes]])
             except:
                 st.warning("Sem arquivo")
                     
@@ -160,7 +163,7 @@ def main():
                 create_global_metrics(st.session_state['updated_df'],
                                     time_col,
                                     data_group,
-                                    classes,
+                                    [classes],
                                     y_true,
                                     y_predicted)   
             except:
@@ -182,59 +185,62 @@ def main():
         ########################################## TELA 3 ##########################################
         elif choice == 'Análise de Resíduos': 
             
-            try:
-                st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
-                                        sorted(st.session_state['updated_df'][data_group].unique().tolist()))
+            #try:
+            st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
+                                    sorted(st.session_state['updated_df'][data_group].unique().tolist()))
 
-                days_count = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].shape[0]
-                
-                mape_metrica = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].mape.clip(0,100).mean()
-                
-                acima5_mask = (st.session_state['updated_df']['acima5']==True) & \
-                    (st.session_state['updated_df'][data_group]==st.session_state['selected'])
-                    
-                days_acima5 = st.session_state['updated_df'].loc[acima5_mask].shape[0]
-                perc_acima5 = days_acima5/days_count
-                
-                acima20_mask = (st.session_state['updated_df']['acima20']==True) & \
-                    (st.session_state['updated_df'][data_group]==st.session_state['selected'])
-                
-                days_acima20 = st.session_state['updated_df'].loc[acima20_mask].shape[0] 
-                perc_acima20 = days_acima20/days_count
+            df_res = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].copy()
+            selected_class = df_res[classes].unique().tolist()[0]
+            selected_class
+            days_count = df_res.shape[0]
             
-                col1 = st.columns(5)
-                delta1 = np.round(mape_metrica-5,2)
+            mape_metrica = df_res.mape.clip(0,100).mean()
+            
+            acima5_mask = (df_res['acima5']==True) & \
+                (df_res[data_group]==st.session_state['selected'])
+                
+            days_acima5 = df_res.loc[acima5_mask].shape[0]
+            perc_acima5 = days_acima5/days_count
+            
+            acima20_mask = (df_res['acima20']==True) & \
+                (df_res[data_group]==st.session_state['selected'])
+            
+            days_acima20 = df_res.loc[acima20_mask].shape[0] 
+            perc_acima20 = days_acima20/days_count
 
-                col1[0].metric(label=data_group,
-                            value= str(st.session_state['selected']),
-                            delta=f"")
-                
-                col1[1].metric(label="Período",
-                            value=f"{days_count} dias")
-                
-                col1[2].metric(label="MAPE",
-                            value=f"{round(mape_metrica,2)}%",
-                            delta=f"{delta1}%",
-                            delta_color="inverse")
-                
-                col1[3].metric(label="Dias Acima de 5%",
-                            value=f"{round(100*perc_acima5,2)}%",
-                            delta=f"{days_acima5} dias",
-                            delta_color='off')
-                
-                col1[4].metric(label="Dias Acima de 20%",
-                            value=f"{round(100*perc_acima20,2)}%",
-                            delta=f"{days_acima20} dias",
-                            delta_color='off')
-                
-                plot_series(st.session_state['updated_df'],
-                        st.session_state['time_col'] ,
-                        st.session_state['real'] ,
-                        st.session_state['previsto'] ,
-                        st.session_state['id'] ,
-                        st.session_state['selected'])
-            except:
-                pass
+            col1 = st.columns(5)
+            delta1 = np.round(mape_metrica-5,2)
+
+            col1[0].metric(label=data_group,
+                        value= str(st.session_state['selected']),
+                        delta=f"{selected_class}",
+                        delta_color='off')
+            
+            col1[1].metric(label="Período",
+                        value=f"{days_count} dias")
+            
+            col1[2].metric(label="MAPE",
+                        value=f"{round(mape_metrica,2)}%",
+                        delta=f"{delta1}%",
+                        delta_color="inverse")
+            
+            col1[3].metric(label="Dias Acima de 5%",
+                        value=f"{round(100*perc_acima5,2)}%",
+                        delta=f"{days_acima5} dias",
+                        delta_color='off')
+            
+            col1[4].metric(label="Dias Acima de 20%",
+                        value=f"{round(100*perc_acima20,2)}%",
+                        delta=f"{days_acima20} dias",
+                        delta_color='off')
+            
+            plot_series(st.session_state['updated_df'],
+                    st.session_state['time_col'] ,
+                    st.session_state['real'] ,
+                    st.session_state['previsto'] ,
+                    st.session_state['id'] ,
+                    st.session_state['selected'])
+        #except:pass
             
             with st.expander('Decomposição Clássica'):
                 try:
@@ -281,7 +287,7 @@ def main():
         elif choice == 'Benchmark':
             
             try:    
-                st.session_state['chosen_col'] = st.selectbox('Categoria', classes)
+                st.session_state['chosen_col'] = classes
                 
                 benchmark_df = st.session_state['updated_df']
                 benchmark_df[st.session_state['time_col']] = pd.to_datetime(benchmark_df[st.session_state['time_col']])

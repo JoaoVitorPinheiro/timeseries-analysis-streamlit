@@ -15,7 +15,8 @@ MENU = ['Métricas Globais',
         'Agrupamentos',
         'Análise de Resíduos',
         'Benchmark']
-        
+
+@st.cache        
 def main():
     
     # Resume to iterator

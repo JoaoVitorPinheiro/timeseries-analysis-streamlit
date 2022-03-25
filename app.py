@@ -9,6 +9,7 @@ from utils import load_data, preprocess_dataframe
 from pages.page1 import create_global_metrics
 from pages.page2 import create_grouped_radar
 from pages.page3 import check_residuals, check_mape, plot_seasonal_decompose, plot_series, standard_residual, check_holidays
+from pages.page4 import create_benchmark_view
 
 os.environ['TZ'] = 'UTC'
 
@@ -36,9 +37,12 @@ def main():
         
     if 'previsto' not in st.session_state:
         st.session_state['previsto'] = None
+
+    if 'previsto_compare' not in st.session_state:
+        st.session_state['previsto_compare'] = None
         
-    if 'classes' not in st.session_state:
-        st.session_state['classes'] = None
+    if 'classe' not in st.session_state:
+        st.session_state['classe'] = None
         
     if 'agrupamento' not in st.session_state:
         st.session_state['agrupamento'] = None
@@ -87,9 +91,11 @@ def main():
             st.session_state['time_col'] = st.selectbox("Coluna Temporal:", st.session_state['df'].columns)
             
             # TROQUEI O PREVISTO PELO REAL
-            st.session_state['real'] = st.selectbox("Real (QDR):", st.session_state['df'].columns)
-            st.session_state['previsto'] = st.selectbox("Previsto (QDP):", st.session_state['df'].columns)
-            st.session_state['classes'] = st.selectbox("Classes:", st.session_state['df'].columns)
+            st.session_state['real'] = st.selectbox("Real :", st.session_state['df'].columns)
+            st.session_state['previsto'] = st.selectbox("Previsto :", st.session_state['df'].columns)
+            #st.session_state['previsto_compare'] = st.selectbox("Previsto (Benchmark):", st.session_state['df'].columns)
+            st.session_state['previsto_compare'] = st.multiselect("Previsto (Benchmark):", st.session_state['df'].columns)
+            st.session_state['classe'] = st.selectbox("Classe:", st.session_state['df'].columns)
             st.session_state['agrupamento'] = st.selectbox("Agrupamento:",['NÃO']+st.session_state['df'].columns.tolist())
             st.session_state['df']['NÃO'] = 0
             
@@ -97,7 +103,8 @@ def main():
             time_col = st.session_state['time_col']
             y_true  = st.session_state['real']
             y_predicted = st.session_state['previsto']
-            classes = st.session_state['classes']
+            y_benchmark = st.session_state['previsto_compare']
+            classe = st.session_state['classe']
             data_group2 = st.session_state['agrupamento']
             
             st.session_state['grouped_df'] = st.session_state['df'][[data_group,
@@ -136,8 +143,10 @@ def main():
                 pass
             else:
                 st.warning('Error: Fim < Inicio.')
-
-            st.write('Período:', start_date, '-', end_date)
+            
+            periodo = (end_date - start_date).days + 1
+            [str(start_date), str(end_date), str(periodo)+' dias']
+            
             mask = (st.session_state['df'][time_col] >= start_date) & (st.session_state['df'][time_col] <= end_date)
             st.session_state['df'] = st.session_state['df'].loc[mask]
             st.session_state['updated_df'] = st.session_state['df'].copy()
@@ -151,7 +160,7 @@ def main():
                                     data_group2,
                                     time_col,
                                     y_true,
-                                    y_predicted]+[classes]])
+                                    y_predicted]+[classe]])
             except:
                 st.warning("Sem arquivo")
                     
@@ -163,7 +172,7 @@ def main():
                 create_global_metrics(st.session_state['updated_df'],
                                     time_col,
                                     data_group,
-                                    [classes],
+                                    [classe],
                                     y_true,
                                     y_predicted)   
             except:
@@ -190,7 +199,7 @@ def main():
                                     sorted(st.session_state['updated_df'][data_group].unique().tolist()))
 
             df_res = st.session_state['updated_df'][st.session_state['updated_df'][data_group]==st.session_state['selected']].copy()
-            selected_class = df_res[classes].unique().tolist()[0]
+            selected_class = df_res[classe].unique().tolist()[0]
             selected_class
             days_count = df_res.shape[0]
             
@@ -285,120 +294,11 @@ def main():
         ########################################## TELA 4 ##########################################
             
         elif choice == 'Benchmark':
+        
+            create_benchmark_view(st.session_state['updated_df'], time_col, data_group, classe,y_true, y_benchmark)
+        #try:    
             
-            try:    
-                st.session_state['chosen_col'] = classes
-                
-                benchmark_df = st.session_state['updated_df']
-                benchmark_df[st.session_state['time_col']] = pd.to_datetime(benchmark_df[st.session_state['time_col']])
-                benchmark_df = benchmark_df.groupby([pd.Grouper(key = st.session_state['time_col'], freq = 'D'), st.session_state['chosen_col'] ]).sum().reset_index()
-                benchmark_df = benchmark_df.reset_index()
-                benchmark_df['residuo'] = benchmark_df[st.session_state['previsto']] - benchmark_df[st.session_state['real']]
-                benchmark_df['mpe'] = 100*(benchmark_df['residuo']/benchmark_df[st.session_state['previsto']])
-                benchmark_df['mape'] = np.abs(benchmark_df['mpe'])
-                benchmark_df['acima5'] = np.where(benchmark_df['mape']>5, 1, 0)
-                benchmark_df['acima20'] = np.where(benchmark_df['mape']>20, 1, 0)
-
-                st.session_state['chosen_item'] = st.selectbox('Classe', benchmark_df[st.session_state['chosen_col']].unique().tolist())
-                
-                dfplot = benchmark_df.loc[benchmark_df[st.session_state['chosen_col'] ] == st.session_state['chosen_item']]
-            
-                days_count = dfplot.shape[0]
-                mape_metrica = dfplot.mape.clip(0,100).mean()
-                
-                acima5_mask = (dfplot['acima5']==True)
-                days_acima5 = dfplot.loc[acima5_mask].shape[0]
-                perc_acima5 = days_acima5/days_count
-                
-                acima20_mask = (dfplot['acima20']==True)
-                days_acima20 = dfplot.loc[acima20_mask].shape[0] 
-                perc_acima20 = days_acima20/days_count
-                
-                col2 = st.columns(5)
-                delta1 = np.round(mape_metrica-5,2)
-
-                col2[0].metric(label=data_group,
-                            value= st.session_state['chosen_item'],
-                            delta=f"")
-                
-                col2[1].metric(label="Período",
-                            value=f"{days_count} dias")
-                
-                col2[2].metric(label="MAPE",
-                            value=f"{round(mape_metrica,2)}%",
-                            delta=f"{delta1}%",
-                            delta_color="inverse")
-                
-                col2[3].metric(label="Dias Acima de 5%",
-                            value=f"{round(100*perc_acima5,2)}%",
-                            delta=f"{days_acima5} dias",
-                            delta_color='off')
-                
-                col2[4].metric(label="Dias Acima de 20%",
-                            value=f"{round(100*perc_acima20,2)}%",
-                            delta=f"{days_acima20} dias",
-                            delta_color='off')
-                
-                fig = go.Figure()
-                fig.add_trace(go.Scattergl(x= dfplot[st.session_state['time_col']],
-                                            y= dfplot[st.session_state['real']],
-                                            mode='lines',
-                                            line=dict(color='rgb(32,4,114)'),
-                                            name='Real'
-                                            )
-                    )
-                fig.add_trace(go.Scattergl(x= dfplot[st.session_state['time_col']],
-                                            y= dfplot[st.session_state['previsto']],
-                                            mode='lines',
-                                            line=dict(color='rgb(234, 82, 111)'),
-                                            name='Previsto'
-                                            )
-                    )
-                fig.update_xaxes(title_text="Data")
-                fig.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
-                fig = format_fig(fig, '', x_title=time_col, y_title='Resíduo')
-                st.plotly_chart(fig, use_container_width=True)
-
-                with st.expander('tabela'):
-                    st.dataframe(dfplot[[st.session_state['time_col'],
-                                        st.session_state['chosen_col'],
-                                        st.session_state['real'],
-                                        st.session_state['previsto'],
-                                        'mpe',
-                                        'mape',
-                                        'acima5',
-                                        'acima20'
-                                        ]])
-                fig = go.Figure()
-                dfplot['lim_sup'] = 5
-                dfplot['lim_inf'] = -1*dfplot['lim_sup']
-                fig.add_trace(go.Scattergl(x=dfplot[time_col],
-                                            y=dfplot['mpe'],
-                                            mode='markers',
-                                            line=dict(color='rgb(32,4,114)'),
-                                            name='MPE'
-                                            )
-                )
-                fig.add_trace(go.Scattergl(
-                            y=dfplot['lim_sup'], 
-                            x=dfplot[time_col],
-                            line=dict(color='red', dash = 'dash'),
-                            name='+5%'
-                            )
-                )
-                fig.add_trace(go.Scattergl(
-                            y=dfplot['lim_inf'], 
-                            x=dfplot[time_col],
-                            line=dict(color='red', dash = 'dash'),
-                            name='-5%'
-                            )
-                )
-                fig.update_xaxes(title_text="Data")
-                fig.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
-                fig = format_fig(fig, '', x_title=time_col, y_title='Erro Médio Percentual')
-                st.plotly_chart(fig, use_container_width=True)
-            except:
-                pass
+        #except: pass
         
 if __name__ == "__main__":
     set_streamlit()

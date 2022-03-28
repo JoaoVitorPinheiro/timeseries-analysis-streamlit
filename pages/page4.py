@@ -1,34 +1,18 @@
-import time
 import plotly.graph_objects as go
-import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
-from statsmodels.tsa.stattools import pacf, acf
-from statsmodels.tsa.seasonal import seasonal_decompose
-from pandas.tseries.holiday import AbstractHolidayCalendar, GoodFriday, Holiday, Easter, Day
 from typing import List, Any, Dict, Tuple
-
-from utils import nomear_mes, nomear_dia
 
 from kpi import *
 from dashboard import *
 
 def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark):
-    
-    #try:    
+       
     benchmark_df = df.copy()
     benchmark_df[time_col] = pd.to_datetime(benchmark_df[time_col])
     benchmark_df = benchmark_df.groupby([pd.Grouper(key = time_col, freq = 'D'), classe]).sum().reset_index()
     benchmark_df = benchmark_df.reset_index()
     st.session_state['chosen_item'] = st.selectbox('Classe', benchmark_df[classe].unique().tolist())
-    days_count = benchmark_df.loc[benchmark_df[classe] == st.session_state['chosen_item']].shape[0]
-
-    '''col_bench = st.columns(2)
-    col_bench[0].metric(label=classe,
-                value= st.session_state['chosen_item'],
-                delta=f"")
-    
-    col_bench[1].metric(label="Período",
-                value=f"{days_count} dias") '''       
+    days_count = benchmark_df.loc[benchmark_df[classe] == st.session_state['chosen_item']].shape[0]    
     
     st.write(sorted(df.loc[df[classe] == st.session_state['chosen_item']][data_group].unique().tolist()))
 
@@ -40,10 +24,10 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     benchmark_df['lim_sup'] = 5
     benchmark_df['lim_inf'] = -1*benchmark_df['lim_sup']
     
-    rgb_list = ['rgb(120,120,120)',
-                'rgb(50,238,0)',
-                'rgb(24,227,410)',
-                'rgb(220,60,210)',
+    rgb_list = ['rgb(60, 216, 186)',
+                'rgb(188, 47, 255)',
+                'rgb(83, 239, 0)',
+                'rgb(52, 1, 217)',
                 'rgb(11,320,0)']  
     
     for num, prev in enumerate(y_benchmark):
@@ -110,7 +94,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                                 y_true]+y_benchmark])
     
         
-    with st.expander(f'Visão por {classe}'):
+    with st.expander(f'{classe}'):
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
                                         y= dfplot[y_true],
                                         mode='lines',
@@ -143,14 +127,14 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_scatter = format_fig(fig_scatter, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_scatter, use_container_width=True)
         
-    with st.expander(f'Visão por {data_group} da '+st.session_state['chosen_item']):
+    with st.expander(f'{data_group} da ' + st.session_state['chosen_item']):
         
         group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'],data_group].unique().tolist())
         dfplot2 = df.loc[df[data_group].isin(group_items)]
         
         fig_group = go.Figure()
         
-        sd = st.selectbox(f'{data_group}', df.loc[df[data_group].isin(group_items)][data_group].unique().tolist())
+        sd = st.selectbox(f'{data_group}', sorted(df.loc[df[data_group].isin(group_items)][data_group].unique().tolist()))
 
         dfplot2 = df.loc[df[data_group] == sd].copy()
         
@@ -223,4 +207,4 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_group.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
         fig_group = format_fig(fig_group, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_group, use_container_width=True)
-    #except:pass
+

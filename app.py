@@ -1,7 +1,7 @@
 from time import time
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go # 
+import plotly.graph_objects as go 
 
 from dashboard import *
 from utils import load_data, preprocess_dataframe
@@ -20,7 +20,7 @@ MENU = ['Métricas Globais',
      
 def main():
     
-    # Resume to iterator
+    # Resumir st.session_state em um iterator
     st_vars = []
     
     if 'file_path' not in st.session_state:

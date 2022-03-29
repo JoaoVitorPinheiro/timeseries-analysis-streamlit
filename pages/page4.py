@@ -6,16 +6,34 @@ from kpi import *
 from dashboard import *
 
 def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark):
-       
+          
+    st.session_state['chosen_item'] = st.selectbox('Classe', df[classe].unique().tolist())
+    group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'], data_group].unique().tolist())
+    st.write(group_items)
+    
+    custom = st.checkbox('Adicionar Mix:')
+    if custom:
+        with st.expander('MIX'):
+            
+            df_mix = df[df[data_group].isin(group_items)].copy()
+            df_mix['mix'] = df_mix[y_benchmark[0]]
+            mixsetup = {}
+            
+            for col in group_items:
+                mixsetup[col] = st.selectbox(f'{col}:', y_benchmark)
+                df_mix.loc[df_mix[data_group] == col, 'mix'] = df_mix.loc[df_mix[data_group] == col, mixsetup[col]]
+            
+            st.dataframe(df_mix.loc[df_mix[data_group].isin(group_items), [time_col, data_group, classe, 'mix']+y_benchmark])
+        df['Mix'] = df_mix['mix']
+        y_benchmark.append('Mix')
+        st.write(mixsetup)
+        
     benchmark_df = df.copy()
     benchmark_df[time_col] = pd.to_datetime(benchmark_df[time_col])
     benchmark_df = benchmark_df.groupby([pd.Grouper(key = time_col, freq = 'D'), classe]).sum().reset_index()
     benchmark_df = benchmark_df.reset_index()
-    st.session_state['chosen_item'] = st.selectbox('Classe', benchmark_df[classe].unique().tolist())
-    days_count = benchmark_df.loc[benchmark_df[classe] == st.session_state['chosen_item']].shape[0]    
+    days_count = benchmark_df.loc[benchmark_df[classe] == st.session_state['chosen_item']].shape[0] 
     
-    st.write(sorted(df.loc[df[classe] == st.session_state['chosen_item']][data_group].unique().tolist()))
-
     fig_series = go.Figure()
     fig_scatter = go.Figure()
     #fig.update_xaxes(title_text="Data")
@@ -27,7 +45,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     rgb_list = [
                 'rgb(216, 71, 151)',
                 'rgb(6, 214, 160)',
-                #'rgb(188, 231, 253)',
+                'rgb(107, 212, 37)',
                 'rgb(81, 88, 187)',
                 'rgb(255, 196, 61)']  
     
@@ -126,12 +144,10 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         
     with st.expander(f'{data_group} da ' + st.session_state['chosen_item']):
         
-        group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'],data_group].unique().tolist())
-        
         fig_group_1 = go.Figure()
         fig_group_2 = go.Figure()
         
-        sd = st.selectbox(f'{data_group}', sorted(df.loc[df[data_group].isin(group_items)][data_group].unique().tolist()))
+        sd = st.selectbox(f'{data_group}', group_items)
 
         dfplot2 = df.loc[df[data_group] == sd].copy()
         
@@ -223,7 +239,6 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         st.plotly_chart(fig_group_1, use_container_width=True)
         
         # TESTE 
-        
         fig_group_2.add_trace(go.Scattergl(
                     y=dfplot2['lim_sup'], 
                     x=dfplot2[time_col],

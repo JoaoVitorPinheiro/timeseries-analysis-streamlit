@@ -24,11 +24,12 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     benchmark_df['lim_sup'] = 5
     benchmark_df['lim_inf'] = -1*benchmark_df['lim_sup']
     
-    rgb_list = ['rgb(60, 216, 186)',
-                'rgb(188, 47, 255)',
-                'rgb(83, 239, 0)',
-                'rgb(52, 1, 217)',
-                'rgb(11,320,0)']  
+    rgb_list = [
+                'rgb(216, 71, 151)',
+                'rgb(6, 214, 160)',
+                'rgb(188, 231, 253)',
+                #'rgb(81, 88, 187)',
+                'rgb(255, 196, 61)']  
     
     for num, prev in enumerate(y_benchmark):
     
@@ -72,14 +73,15 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                     value=f"{round(100*perc_acima20,2)}%",
                     delta=f"{days_acima20} dias",
                     delta_color='off')
-    
+        # VOLUME
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
                                     y= dfplot[prev],
-                                    mode='lines',
+                                    mode='lines+markers',
                                     line=dict(color=rgb_list[num]),
                                     name= prev
                                     )
         )
+        # ERRO
         fig_scatter.add_trace(go.Scattergl(x=dfplot[time_col],
                                 y=dfplot['mpe'],
                                 mode='markers',
@@ -93,24 +95,23 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                                 classe,
                                 y_true]+y_benchmark])
     
-        
     with st.expander(f'{classe}'):
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
                                         y= dfplot[y_true],
                                         mode='lines',
-                                        line=dict(color='rgb(32,4,114)'),
+                                        line=dict(color='rgb(0, 0, 0)', dash = 'dash'),
                                         name='Real'
                                         )
         )
         fig_series.update_xaxes(title_text="Data")
         fig_series.update_yaxes(title_text= "Residuo", showgrid=False, zerolinecolor='#000000')
-        fig_series = format_fig(fig_series, '', x_title=time_col, y_title='Resíduo')
+        fig_series = format_fig(fig_series, '', x_title=time_col, y_title='Volume')
         st.plotly_chart(fig_series, use_container_width=True)
             
-        
         fig_scatter.add_trace(go.Scattergl(
                     y=dfplot['lim_sup'], 
                     x=dfplot[time_col],
+                    mode='lines',
                     line=dict(color='red', dash = 'dash'),
                     name='+5%'
                     )
@@ -118,6 +119,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_scatter.add_trace(go.Scattergl(
                     y=dfplot['lim_inf'], 
                     x=dfplot[time_col],
+                    mode='lines',
                     line=dict(color='red', dash = 'dash'),
                     name='-5%'
                     )
@@ -130,13 +132,16 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     with st.expander(f'{data_group} da ' + st.session_state['chosen_item']):
         
         group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'],data_group].unique().tolist())
-        dfplot2 = df.loc[df[data_group].isin(group_items)]
         
-        fig_group = go.Figure()
+        fig_group_1 = go.Figure()
+        fig_group_2 = go.Figure()
         
         sd = st.selectbox(f'{data_group}', sorted(df.loc[df[data_group].isin(group_items)][data_group].unique().tolist()))
 
         dfplot2 = df.loc[df[data_group] == sd].copy()
+        
+        dfplot2['lim_sup'] = 5
+        dfplot2['lim_inf'] = -1*dfplot2['lim_sup']
         
         col_group = st.columns(2)
         col_group[0].metric(label=data_group,
@@ -146,10 +151,10 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         col_group[1].metric(label="Período",
                 value=f"{days_count} dias")   
     
-        fig_group.add_trace(go.Scattergl(x= dfplot2[time_col],
+        fig_group_1.add_trace(go.Scattergl(x= dfplot2[time_col],
                                         y= dfplot2[y_true],
                                         mode='lines',
-                                        line=dict(color='rgb(32,4,114)'),
+                                        line=dict(color='rgb(0, 0, 0)', dash = 'dash'),
                                         name='Real'
                                         )
         )
@@ -195,16 +200,47 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                         delta=f"{days_acima20} dias",
                         delta_color='off')
         
-            fig_group.add_trace(go.Scattergl(x= dfplot2[time_col],
+            fig_group_1.add_trace(go.Scattergl(x= dfplot2[time_col],
                                         y= dfplot2[prev],
-                                        mode='lines',
+                                        mode='lines+markers',
                                         line=dict(color=rgb_list[num]),
                                         name=prev
                                         )
             )
+            
+            fig_group_2.add_trace(go.Scattergl(x=dfplot2[time_col],
+                                y=dfplot2['mpe'],
+                                mode='markers',
+                                line=dict(color=rgb_list[num]),
+                                name= prev
+                                )
+            )
         
-        fig_group.update_xaxes(title_text="Data")
-        fig_group.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
-        fig_group = format_fig(fig_group, '', x_title=time_col, y_title='Erro Médio Percentual')
-        st.plotly_chart(fig_group, use_container_width=True)
-
+        fig_group_1.update_xaxes(title_text="Data")
+        fig_group_1.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
+        fig_group_1 = format_fig(fig_group_1, '', x_title=time_col, y_title='Volume')
+        st.plotly_chart(fig_group_1, use_container_width=True)
+        
+        # TESTE 
+        
+        fig_group_2.add_trace(go.Scattergl(
+                    y=dfplot2['lim_sup'], 
+                    x=dfplot2[time_col],
+                    mode='lines',
+                    line=dict(color='red', dash = 'dash'),
+                    name='+5%'
+                    )
+        )
+        fig_group_2.add_trace(go.Scattergl(
+                    y=dfplot2['lim_inf'], 
+                    x=dfplot2[time_col],
+                    mode='lines',
+                    line=dict(color='red', dash = 'dash'),
+                    name='-5%'
+                    )
+        )
+        fig_group_2.update_xaxes(title_text="Data")
+        fig_group_2.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
+        fig_group_2 = format_fig(fig_group_2, '', x_title=time_col, y_title='Erro Médio Percentual')
+        st.plotly_chart(fig_group_2, use_container_width=True)
+        

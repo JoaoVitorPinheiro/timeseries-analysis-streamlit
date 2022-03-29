@@ -90,15 +90,6 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                                 )
         )
     
-    with st.expander('Tabela'):
-            '''st.dataframe(dfplot[[time_col,
-                                classe,
-                                y_true]+y_benchmark])'''
-            
-            st.dataframe(benchmark_df[[time_col,
-                                       classe,
-                                       y_true]+y_benchmark])
-    
     with st.expander(f'{classe}'):
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
                                         y= dfplot[y_true],
@@ -253,4 +244,30 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_group_2.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
         fig_group_2 = format_fig(fig_group_2, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_group_2, use_container_width=True)
+    
+    st.write(y_benchmark)
+    
+    def colorize_mape(cell_value):
+        erro_acima = 'background-color: lightcoral;'
+        erro_abaixo = 'background-color: yellow;'
+        default = 'background-color: lightgreen;'
         
+        if type(cell_value) in [float, int]:
+            if cell_value>5:
+                return erro_acima 
+            if cell_value<-5:
+                return erro_abaixo 
+        return default
+    
+    erro_cols = []
+    
+    for col in y_benchmark:
+        benchmark_df[f'erro_{col}'] = 100*(benchmark_df[col] - benchmark_df[y_true])/benchmark_df[col]
+        erro_cols.append(f'erro_{col}')
+        
+    st.dataframe(benchmark_df[[time_col,
+                                    classe,
+                                    y_true]+y_benchmark+erro_cols].style.applymap(colorize_mape, subset=erro_cols)
+                 )
+    
+    

@@ -28,6 +28,9 @@ def preprocess_dataframe(data: pd.DataFrame,
                          y_predicted: str,
                          ) -> pd.DataFrame:
     
+    if 'Nome' in data.columns:
+        data['nome'] = data['Nome']
+        
     data[time_col] = pd.to_datetime(data[time_col], format = '%Y-%m-%d')
     data[time_col] = data[time_col].dt.date
     nan_mask = (data[y_true].isna())|(data[y_predicted].isna())

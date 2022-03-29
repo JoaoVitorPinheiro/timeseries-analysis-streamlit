@@ -27,8 +27,8 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     rgb_list = [
                 'rgb(216, 71, 151)',
                 'rgb(6, 214, 160)',
-                'rgb(188, 231, 253)',
-                #'rgb(81, 88, 187)',
+                #'rgb(188, 231, 253)',
+                'rgb(81, 88, 187)',
                 'rgb(255, 196, 61)']  
     
     for num, prev in enumerate(y_benchmark):
@@ -91,9 +91,13 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         )
     
     with st.expander('Tabela'):
-            st.dataframe(dfplot[[time_col,
+            '''st.dataframe(dfplot[[time_col,
                                 classe,
-                                y_true]+y_benchmark])
+                                y_true]+y_benchmark])'''
+            
+            st.dataframe(benchmark_df[[time_col,
+                                       classe,
+                                       y_true]+y_benchmark])
     
     with st.expander(f'{classe}'):
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
@@ -144,8 +148,14 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         dfplot2['lim_inf'] = -1*dfplot2['lim_sup']
         
         col_group = st.columns(2)
+        
+        if 'nome' in dfplot2.columns:
+            data_group_name = dfplot2['nome'].unique().tolist()[0]
+        else:
+            data_group_name = sd
+            
         col_group[0].metric(label=data_group,
-                value= sd,
+                value= data_group_name,
                 delta=f"")
     
         col_group[1].metric(label="Período",

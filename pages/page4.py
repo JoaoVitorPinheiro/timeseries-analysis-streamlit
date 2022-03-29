@@ -267,7 +267,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         
     st.dataframe(benchmark_df[[time_col,
                                     classe,
-                                    y_true]+y_benchmark+erro_cols].style.applymap(colorize_mape, subset=erro_cols)
+                                    y_true]+erro_cols+y_benchmark].style.applymap(colorize_mape, subset=erro_cols)
                  )
     
     

@@ -20,6 +20,8 @@ MENU = ['Métricas Globais',
      
 def main():
     
+    set_streamlit()
+    set_page_style()
     # Resumir st.session_state em um iterator
     st_vars = []
     
@@ -145,7 +147,13 @@ def main():
                 st.warning('Error: Fim < Inicio.')
             
             periodo = (end_date - start_date).days + 1
-            [str(start_date), str(end_date), str(periodo)+' dias']
+            
+            time_dict = {'Início:':str(start_date),
+                         'Fim:':str(end_date),
+                         'Período:':str(periodo)+' dias'}
+            
+            st.write(time_dict)
+            #[str(start_date), str(end_date), str(periodo)+' dias']
             
             mask = (st.session_state['df'][time_col] >= start_date) & (st.session_state['df'][time_col] <= end_date)
             st.session_state['df'] = st.session_state['df'].loc[mask]
@@ -301,6 +309,4 @@ def main():
         #except: pass
         
 if __name__ == "__main__":
-    set_streamlit()
-    set_page_container_style()
     main()

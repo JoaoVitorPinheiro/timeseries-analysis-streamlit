@@ -7,27 +7,34 @@ from dashboard import *
 
 def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark):
           
-    st.session_state['chosen_item'] = st.selectbox('Classe', df[classe].unique().tolist())
-    group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'], data_group].unique().tolist())
-    st.write(group_items)
+    all_items = sorted(df[data_group].unique().tolist())
     
+    restricted_words = ['Comgás']
+    y_bench = [i for i in y_benchmark if i not in restricted_words]
     custom = st.checkbox('Adicionar Mix:')
+    #st.write(y_bench)
+    
+    df_mix = df.copy()
+    #df_mix = df[df[data_group].isin(group_items)].copy()
+    df_mix['mix'] = df_mix[y_bench[0]]
+    
+    mixsetup = {}
     if custom:
-        with st.expander('MIX'):
-            
-            df_mix = df[df[data_group].isin(group_items)].copy()
-            df_mix['mix'] = df_mix[y_benchmark[0]]
-            mixsetup = {}
-            
-            for col in group_items:
-                mixsetup[col] = st.selectbox(f'{col}:', y_benchmark)
+        with st.expander(f'Escolha de modelo por {data_group}:'):
+
+            for col in all_items:
+                mixsetup[col] = st.selectbox(f'{col}:', y_bench)
                 df_mix.loc[df_mix[data_group] == col, 'mix'] = df_mix.loc[df_mix[data_group] == col, mixsetup[col]]
             
-            st.dataframe(df_mix.loc[df_mix[data_group].isin(group_items), [time_col, data_group, classe, 'mix']+y_benchmark])
+            #st.dataframe(df_mix.loc[df_mix[data_group].isin(group_items), [time_col, data_group, classe, 'mix']+y_benchmark])
         df['Mix'] = df_mix['mix']
         y_benchmark.append('Mix')
         st.write(mixsetup)
-        
+    
+    st.session_state['chosen_item'] = st.selectbox(f'{classe}', df[classe].unique().tolist())
+    group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'], data_group].unique().tolist())
+    
+    st.write({'Citygates da Zona de Entrega': group_items})
     benchmark_df = df.copy()
     benchmark_df[time_col] = pd.to_datetime(benchmark_df[time_col])
     benchmark_df = benchmark_df.groupby([pd.Grouper(key = time_col, freq = 'D'), classe]).sum().reset_index()
@@ -47,7 +54,9 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                 'rgb(6, 214, 160)',
                 'rgb(107, 212, 37)',
                 'rgb(81, 88, 187)',
-                'rgb(255, 196, 61)']  
+                'rgb(255, 196, 61)',
+                'rgb(237, 231, 177)',
+                'rgb(222, 158, 54)']  
     
     for num, prev in enumerate(y_benchmark):
     
@@ -73,8 +82,6 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         col2 = st.columns(4)
         delta1 = np.round(mape_metrica-5,2)
         
-        #col2[0].metric(label=data_group,value= st.session_state['chosen_item'],delta=f"")
-        #col2[1].metric(label="Período", value=f"{days_count} dias")
         col2[0].metric(label="Previsto", value=f"{prev}")
         
         col2[1].metric(label="MAPE",
@@ -108,7 +115,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                                 )
         )
     
-    with st.expander(f'{classe}'):
+    with st.expander(f'Visualização do volume previsto e erros: {classe}'):
         fig_series.add_trace(go.Scattergl(x= dfplot[time_col],
                                         y= dfplot[y_true],
                                         mode='lines',
@@ -142,7 +149,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_scatter = format_fig(fig_scatter, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_scatter, use_container_width=True)
         
-    with st.expander(f'{data_group} da ' + st.session_state['chosen_item']):
+    with st.expander(f'Visualização do volume previsto e erros: {data_group} da ' + st.session_state['chosen_item']):
         
         fig_group_1 = go.Figure()
         fig_group_2 = go.Figure()
@@ -194,7 +201,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
             acima20_mask = (dfplot2['acima20']==True)
             days_acima20 = dfplot2.loc[acima20_mask].shape[0] 
             perc_acima20 = days_acima20/days_count
-        
+
             colg = st.columns(4)
             deltag = np.round(mape_metrica-5,2)
             
@@ -216,7 +223,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                         value=f"{round(100*perc_acima20,2)}%",
                         delta=f"{days_acima20} dias",
                         delta_color='off')
-        
+
             fig_group_1.add_trace(go.Scattergl(x= dfplot2[time_col],
                                         y= dfplot2[prev],
                                         mode='lines+markers',
@@ -232,7 +239,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                                 name= prev
                                 )
             )
-        
+            
         fig_group_1.update_xaxes(title_text="Data")
         fig_group_1.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
         fig_group_1 = format_fig(fig_group_1, '', x_title=time_col, y_title='Volume')
@@ -260,9 +267,10 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_group_2 = format_fig(fig_group_2, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_group_2, use_container_width=True)
     
-    st.write(y_benchmark)
+    #st.write(y_benchmark)
     
     def colorize_mape(cell_value):
+        
         erro_acima = 'background-color: lightcoral;'
         erro_abaixo = 'background-color: yellow;'
         default = 'background-color: lightgreen;'
@@ -280,9 +288,6 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         benchmark_df[f'erro_{col}'] = 100*(benchmark_df[col] - benchmark_df[y_true])/benchmark_df[col]
         erro_cols.append(f'erro_{col}')
         
-    st.dataframe(benchmark_df[[time_col,
-                                    classe,
-                                    y_true]+erro_cols+y_benchmark].style.applymap(colorize_mape, subset=erro_cols)
-                 )
-    
-    
+    st.dataframe(benchmark_df[[time_col, classe, y_true]+erro_cols+y_benchmark].
+                 style.applymap(colorize_mape, subset=erro_cols)
+    )

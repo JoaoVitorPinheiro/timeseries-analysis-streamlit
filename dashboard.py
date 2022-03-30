@@ -10,10 +10,29 @@ def set_streamlit():
     st.set_page_config(
     page_title = "Análise do Forecast",
     page_icon = "📈",
-    layout="wide",)
+    layout="centered",)
     return "initializing..."
 
-# NÃO FUNFA AINDA
+def set_page_style():
+    st.markdown("""
+            <style>
+                .css-18e3th9 {
+                        padding-top: 0rem;
+                        padding-bottom: 10rem;
+                        padding-left: 5rem;
+                        padding-right: 5rem;
+                    }
+                .css-1d391kg {
+                        padding-top: 3.5rem;
+                        padding-right: 1rem;
+                        padding-bottom: 3.5rem;
+                        padding-left: 1rem;
+                    }
+            </style>
+            """,
+            unsafe_allow_html=True
+            )
+    
 def set_page_container_style(
         max_width: int = 1100, max_width_100_percent: bool = False,
         padding_top: int = 1, padding_right: int = 10, padding_left: int = 1, padding_bottom: int = 10,

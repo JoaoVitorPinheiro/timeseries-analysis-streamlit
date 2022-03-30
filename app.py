@@ -302,9 +302,10 @@ def main():
         ########################################## TELA 4 ##########################################
             
         elif choice == 'Benchmark':
-        
-            create_benchmark_view(st.session_state['updated_df'], time_col, data_group, classe,y_true, y_benchmark)
-        #try:    
+            try:
+                create_benchmark_view(st.session_state['updated_df'], time_col, data_group, classe,y_true, y_benchmark)
+            except:
+                pass
             
         #except: pass
         

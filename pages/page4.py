@@ -18,12 +18,40 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     #df_mix = df[df[data_group].isin(group_items)].copy()
     df_mix['mix'] = df_mix[y_bench[0]]
     
-    mixsetup = {}
+    model_names = ['LGBM_PCS', 'Extrap_PCS']
+    
     if custom:
+        mixsetup = {
+                'CG01': model_names[0],
+                'CG02': model_names[1],
+                'CG03': model_names[1],
+                'CG04': model_names[0],
+                'CG05': model_names[1],
+                'CG06': model_names[0],
+                'CG07': model_names[1],
+                'CG08': model_names[0],
+                'CG09': model_names[1],
+                'CG10': model_names[1],
+                'CG11': model_names[1],
+                'CG12': model_names[0],
+                'CG13': model_names[1],
+                'CG14': model_names[1],
+                'CG15': model_names[1],
+                'CG16': model_names[0],
+                'CG17': model_names[0],
+                'CG18': model_names[1],
+                'CG19': model_names[0],
+                'CG20': model_names[1],
+                'CG21': model_names[1],
+                'CG22': model_names[1],
+                'CG23': model_names[0],
+                'CG24': model_names[0]
+                }
+        
         with st.expander(f'Escolha de modelo por {data_group}:'):
 
             for col in all_items:
-                mixsetup[col] = st.selectbox(f'{col}:', y_bench)
+                mixsetup[col] = st.selectbox(f'{col}:', [mixsetup[col]] + list(filter(lambda x: x != mixsetup[col], y_bench)))
                 df_mix.loc[df_mix[data_group] == col, 'mix'] = df_mix.loc[df_mix[data_group] == col, mixsetup[col]]
             
             #st.dataframe(df_mix.loc[df_mix[data_group].isin(group_items), [time_col, data_group, classe, 'mix']+y_benchmark])
@@ -31,7 +59,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         y_benchmark.append('Mix')
         st.write(mixsetup)
     
-    st.session_state['chosen_item'] = st.selectbox(f'{classe}', df[classe].unique().tolist())
+    st.session_state['chosen_item'] = st.selectbox(f'{classe}', sorted(df[classe].unique().tolist()))
     group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'], data_group].unique().tolist())
     
     st.write({'Citygates da Zona de Entrega': group_items})

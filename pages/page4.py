@@ -48,7 +48,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                 'CG24': model_names[0]
                 }
         
-        with st.expander(f'Escolha de modelo por {data_group}:'):
+        with st.expander(f'Modelo por {data_group}:'):
 
             for col in all_items:
                 mixsetup[col] = st.selectbox(f'{col}:', [mixsetup[col]] + list(filter(lambda x: x != mixsetup[col], y_bench)))

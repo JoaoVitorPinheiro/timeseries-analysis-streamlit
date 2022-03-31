@@ -86,7 +86,7 @@ def main():
 
     if file_menu == 'Teste':
         
-        st.session_state['password']  = st.sidebar.text_input(label='senha')
+        st.session_state['password']  = st.sidebar.text_input(label='senha', type = 'password')
 
         if st.session_state['password'] != os.environ['app_password']: 
             st.warning('Acesso negado')

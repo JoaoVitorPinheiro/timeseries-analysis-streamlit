@@ -88,8 +88,6 @@ Pympler==1.0.1
 pyparsing==3.0.7
 pyrsistent==0.17.3
 pytz-deprecation-shim==0.1.0.post0
-pywin32==301
-pywinpty==2.0.2
 pyzmq==22.0.3
 requests==2.27.1
 rsa==4.8

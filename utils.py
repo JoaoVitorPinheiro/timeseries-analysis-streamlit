@@ -41,15 +41,14 @@ def load_sql_data():
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    @st.cache(allow_output_mutation=True, ttl=600)
+    @st.cache(ttl=600)
     def run_query(query):
         rows = conn.execute(query, headers=1)
         rows = rows.fetchall()
         print(rows[-1])
-        return pd.read_sql(query_msg, conn)
+        return pd.read_sql(query, conn)
 
-    df = run_query(query_msg)
-    return df
+    return run_query(query_msg)
 
 def preprocess_dataframe(data: pd.DataFrame,
                          time_col: str,

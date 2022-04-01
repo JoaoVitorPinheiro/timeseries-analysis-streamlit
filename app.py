@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go 
 
 from dashboard import *
-from utils import load_csv_data, load_sql_data, preprocess_dataframe
+from utils import load_csv_data, load_sql_data, preprocess_dataframe, validate_password
 
 from pages.page1 import create_global_metrics
 from pages.page2 import create_grouped_radar
@@ -86,11 +86,13 @@ def main():
 
     if file_menu == 'Teste':
         
-        st.session_state['password']  = st.sidebar.text_input(label='senha', type = 'password')
+        st.session_state['password']  = st.sidebar.text_input(label='', type = 'password')
 
-        if st.session_state['password'] != os.environ['app_password']: 
+        #if st.session_state['password'] != os.environ['app_password']: 
+        if validate_password(st.session_state['password']) == False: 
             st.warning('Acesso negado')
             st.stop()
+            
         st.session_state['df'] = load_sql_data()
         st.session_state['file_path'] = "gsheets"
         #st.dataframe(st.session_state['df'])

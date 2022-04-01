@@ -11,7 +11,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     
     restricted_words = ['Comgás']
     y_bench = [i for i in y_benchmark if i not in restricted_words]
-    custom = st.checkbox('Adicionar Mix:')
+    custom = st.checkbox('Adicionar Híbrido:')
     #st.write(y_bench)
     
     df_mix = df.copy()
@@ -21,6 +21,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     model_names = ['LGBM_PCS', 'Extrap_PCS']
     
     if custom:
+        
         mixsetup = {
                 'CG01': model_names[0],
                 'CG02': model_names[1],
@@ -55,8 +56,8 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                 df_mix.loc[df_mix[data_group] == col, 'mix'] = df_mix.loc[df_mix[data_group] == col, mixsetup[col]]
             
             #st.dataframe(df_mix.loc[df_mix[data_group].isin(group_items), [time_col, data_group, classe, 'mix']+y_benchmark])
-        df['Mix'] = df_mix['mix']
-        y_benchmark.append('Mix')
+        df['Híbrido'] = df_mix['mix']
+        y_benchmark.append('Híbrido')
         st.write(mixsetup)
     
     st.session_state['chosen_item'] = st.selectbox(f'{classe}', sorted(df[classe].unique().tolist()))
@@ -294,8 +295,6 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         fig_group_2.update_yaxes(title_text= "Erro Médio Percentual", showgrid=False, zerolinecolor='#000000')
         fig_group_2 = format_fig(fig_group_2, '', x_title=time_col, y_title='Erro Médio Percentual')
         st.plotly_chart(fig_group_2, use_container_width=True)
-    
-    #st.write(y_benchmark)
     
     def colorize_mape(cell_value):
         

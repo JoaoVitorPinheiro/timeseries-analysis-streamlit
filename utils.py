@@ -1,4 +1,5 @@
 import streamlit as st
+from google.oauth2 import service_account
 from gsheetsdb import connect
 import os
 
@@ -25,23 +26,29 @@ def load_csv_data(file):
         )
         st.stop()
 
-@st.cache(allow_output_mutation=True, ttl=600)
 def load_sql_data():
-        # Create a connection object.
-    conn = connect()
+
+    # Create a connection object.
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+        ],
+    )
+    conn = connect(credentials=credentials)
     # Perform SQL query on the Google Sheet.
     # Uses st.cache to only rerun when the query changes or after 10 min.
+    sheet_url = os.environ["gsheets_url"]
+    query_msg = f'SELECT * FROM "{sheet_url}"'
+    
+    @st.cache(allow_output_mutation=True, ttl=600)
     def run_query(query):
         rows = conn.execute(query, headers=1)
         rows = rows.fetchall()
-        return rows
+        print(rows[-1])
+        return pd.read_sql(query_msg, conn)
 
-    sheet_url = os.environ["gsheets_url"]
-    print(sheet_url)
-    query_msg = f'SELECT * FROM "{sheet_url}"'
-    rows = run_query(query_msg)
-    print(rows[-1])
-    df = pd.read_sql(query_msg, conn)
+    df = run_query(query_msg)
     return df
 
 def preprocess_dataframe(data: pd.DataFrame,
@@ -74,3 +81,6 @@ def preprocess_dataframe(data: pd.DataFrame,
     data['acima20'] = (data['mape']>20).astype(int)
     data = data.sort_values(by = time_col, ascending=True)
     return data
+
+def validate_password(password):
+    return st.session_state['password'] == os.environ['app_password']

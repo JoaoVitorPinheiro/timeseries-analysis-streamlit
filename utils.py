@@ -30,7 +30,7 @@ def load_sql_data():
     
     # Create a connection object.
     credentials = service_account.Credentials.from_service_account_info(
-        os.environ["gcp_service_account"],
+        st.secrets["gcp_service_account"],
         scopes=[
             "https://www.googleapis.com/auth/spreadsheets",
         ],

@@ -34,7 +34,6 @@ def run_query(query, conn):
     return rows
     
 def load_sql_data():
-    
     # Create a connection object.
     credentials = service_account.Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],

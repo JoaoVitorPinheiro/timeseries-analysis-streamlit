@@ -44,7 +44,7 @@ def load_sql_data():
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    @st.cache(allow_output_mutation=True, ttl=600, hash_funcs={Connection:id})
+    @st.cache(allow_output_mutation=True, ttl=600, hash_funcs={Connection:hash})
     def get_database_connection(credentials):
         return Connection(credentials=credentials)
     

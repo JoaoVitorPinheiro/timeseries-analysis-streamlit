@@ -11,4 +11,6 @@ statsmodels==0.13.2
 streamlit==1.5.1
 toml==0.10.2
 cffi==1.13.0
+pycparser==2.21
 click==8
+rsa==4.8

@@ -1,7 +1,6 @@
 import streamlit as st
 from google.oauth2 import service_account
 from gsheetsdb.db import Connection
-import _cffi_backend
 import os
 
 from kpi import *
@@ -47,10 +46,10 @@ def load_sql_data():
     
     # Perform SQL query on the Google Sheet.
     # Uses st.cache to only rerun when the query changes or after 10 min.
-    @st.cache(allow_output_mutation=True, ttl=600, )
+    @st.cache(allow_output_mutation=True, ttl=600)
     def run_dataframe_query(query):
         
-        conn = Connection(credentials=credentials)
+        conn = Connection()
         return pd.read_sql(query, conn)
 
     return run_dataframe_query(query_msg)

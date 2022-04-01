@@ -1,5 +1,5 @@
 import streamlit as st
-from google.oauth2 import service_account
+from google.oauth2 import service_account, Credentials
 from gsheetsdb.db import Connection
 import os
 
@@ -44,7 +44,7 @@ def load_sql_data():
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    @st.cache(allow_output_mutation=True, ttl=600, hash_funcs={Connection:hash})
+    @st.cache(allow_output_mutation=True, ttl=600, hash_funcs={Credentials:hash})
     def get_database_connection(credentials):
         return Connection(credentials=credentials)
     

@@ -9,3 +9,4 @@ streamlit==1.5.1
 plotly==5.6.0
 gsheetsdb==0.1.13.1
 click==8
+google-auth==2.6.2

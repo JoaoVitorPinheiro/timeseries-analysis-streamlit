@@ -36,15 +36,19 @@ def run_query(query, conn):
 def load_sql_data():
     # Create a connection object.
     credentials = service_account.Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=[
-            "https://www.googleapis.com/auth/spreadsheets",
-        ],
-    )
-    conn = Connection(credentials=credentials)
-    
+            st.secrets["gcp_service_account"],
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+            ],
+        )
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
+    
+    @st.cache(allow_output_mutation=True, ttl=600)
+    def get_database_connection(credentials):
+        return Connection(credentials=credentials)
+    
+    conn = get_database_connection(credentials)
     
     # Perform SQL query on the Google Sheet.
     # Uses st.cache to only rerun when the query changes or after 10 min.

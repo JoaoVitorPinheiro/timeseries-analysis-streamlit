@@ -2,6 +2,7 @@ import streamlit as st
 from google.oauth2 import service_account
 from google.auth import credentials
 from gsheetsdb.db import Connection
+import cffi
 import os
 
 from kpi import *
@@ -45,7 +46,7 @@ def load_sql_data():
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    @st.cache(allow_output_mutation=True, ttl=600)
+    @st.cache(allow_output_mutation=True, ttl=600, hash_funcs=)
     def get_database_connection(credentials):
         return Connection(credentials=credentials)
     

@@ -51,7 +51,7 @@ def load_sql_data():
     def run_dataframe_query(query, conn):
         return pd.read_sql(query, conn)
 
-    return run_dataframe_query(query_msg)
+    return run_dataframe_query(query_msg, conn)
 
 def preprocess_dataframe(data: pd.DataFrame,
                          time_col: str,

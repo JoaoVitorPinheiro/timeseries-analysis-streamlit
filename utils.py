@@ -1,5 +1,6 @@
 import streamlit as st
-from google.oauth2 import service_account, Credentials
+from google.oauth2 import service_account
+from google.auth import Credentials
 from gsheetsdb.db import Connection
 import os
 

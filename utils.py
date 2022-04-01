@@ -1,6 +1,6 @@
 import streamlit as st
 from google.oauth2 import service_account
-from gsheetsdb import connect
+from gsheetsdb.db import Connection
 import os
 
 from kpi import *
@@ -27,7 +27,7 @@ def load_csv_data(file):
         st.stop()
 
 @st.cache(allow_output_mutation=True, ttl=600)
-def run_query(query):
+def run_query(query, conn):
     rows = conn.execute(query, headers=1)
     rows = rows.fetchall()
     print(rows[-1])
@@ -42,7 +42,7 @@ def load_sql_data():
             "https://www.googleapis.com/auth/spreadsheets",
         ],
     )
-    conn = connect(credentials=credentials)
+    conn = Connection(credentials=credentials)
     
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'

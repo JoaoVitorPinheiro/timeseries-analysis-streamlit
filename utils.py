@@ -26,6 +26,13 @@ def load_csv_data(file):
         )
         st.stop()
 
+@st.cache(allow_output_mutation=True, ttl=600)
+def run_query(query):
+    rows = conn.execute(query, headers=1)
+    rows = rows.fetchall()
+    print(rows[-1])
+    return rows
+    
 def load_sql_data():
     
     # Create a connection object.
@@ -36,22 +43,17 @@ def load_sql_data():
         ],
     )
     conn = connect(credentials=credentials)
-    # Perform SQL query on the Google Sheet.
-    # Uses st.cache to only rerun when the query changes or after 10 min.
+    
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    def run_query(query):
-        rows = conn.execute(query, headers=1)
-        rows = rows.fetchall()
-        print(rows[-1])
-        return pd.read_sql(query, conn)
-        
+    # Perform SQL query on the Google Sheet.
+    # Uses st.cache to only rerun when the query changes or after 10 min.
     @st.cache(allow_output_mutation=True, ttl=600)
-    def run_dataframe_query(query, conn):
+    def run_dataframe_query(query):
         return pd.read_sql(query, conn)
 
-    return run_dataframe_query(query_msg, conn)
+    return run_dataframe_query(query_msg)
 
 def preprocess_dataframe(data: pd.DataFrame,
                          time_col: str,

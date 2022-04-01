@@ -11,3 +11,7 @@ statsmodels==0.13.2
 streamlit==1.5.1
 toml==0.10.2
 click==8
+google-cloud-core==1.0.3
+google-apitools
+google-api-python-client
+google-cloud-storage==1.17.0

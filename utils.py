@@ -41,7 +41,7 @@ def load_sql_data():
     sheet_url = os.environ["gsheets_url"]
     query_msg = f'SELECT * FROM "{sheet_url}"'
     
-    @st.cache(allow_output_mutation=True, ttl=600)
+    #@st.cache(allow_output_mutation=True, ttl=600)
     def run_query(query):
         rows = conn.execute(query, headers=1)
         rows = rows.fetchall()

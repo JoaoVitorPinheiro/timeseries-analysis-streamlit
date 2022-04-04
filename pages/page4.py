@@ -83,8 +83,8 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                 'rgb(6, 214, 160)',
                 'rgb(107, 212, 37)',
                 'rgb(81, 88, 187)',
-                'rgb(255, 196, 61)',
-                'rgb(237, 231, 177)',
+                'rgb(195, 31, 31)',
+                'rgb(46, 108, 108)',
                 'rgb(222, 158, 54)']  
     
     for num, prev in enumerate(y_benchmark):

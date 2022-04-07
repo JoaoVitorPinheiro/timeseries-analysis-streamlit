@@ -63,7 +63,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     st.session_state['chosen_item'] = st.selectbox(f'{classe}', sorted(df[classe].unique().tolist()))
     group_items = sorted(df.loc[df[classe] == st.session_state['chosen_item'], data_group].unique().tolist())
     
-    st.write({'Citygates da Zona de Entrega': group_items})
+    st.write({f'{data_group}s da Zona de Entrega': group_items})
     benchmark_df = df.copy()
     benchmark_df[time_col] = pd.to_datetime(benchmark_df[time_col])
     benchmark_df = benchmark_df.groupby([pd.Grouper(key = time_col, freq = 'D'), classe]).sum().reset_index()
@@ -200,7 +200,8 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         col_group[0].metric(label=data_group,
                 value= data_group_name,
                 delta=f"")
-    
+
+        days_count = dfplot2.shape[0]
         col_group[1].metric(label="Período",
                 value=f"{days_count} dias")   
     
@@ -220,7 +221,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
             dfplot2['acima5'] = np.where(dfplot2['mape']>5, 1, 0)
             dfplot2['acima20'] = np.where(dfplot2['mape']>20, 1, 0)
             
-            days_count = dfplot2.shape[0]
+            #days_count = dfplot2.shape[0]
             mape_metrica = dfplot2.mape.clip(0,100).mean()
             
             acima5_mask = (dfplot2['acima5']==True)

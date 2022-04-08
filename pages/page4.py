@@ -312,24 +312,28 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     
         return default
     
-    erro_cols = []
-    
-    for col in y_benchmark:
-        df[f'erro_{col}'] = 100*(df[col] - df[y_true])/df[col]
-        erro_cols.append(f'erro_{col}')
-    
-    st.write(f'Tabela - {data_group}')
-    st.dataframe(df.loc[df[data_group]!='CG24',[time_col, data_group, classe, y_true]+erro_cols+y_benchmark].
-                 style.applymap(colorize_mape, subset=erro_cols))
-    
-    erro_cols = []
-    
-    for col in y_benchmark:
-        benchmark_df[f'erro_{col}'] = 100*(benchmark_df[col] - benchmark_df[y_true])/benchmark_df[col]
-        erro_cols.append(f'erro_{col}')
-    
-    st.write(f'Tabela - {classe}')
-    st.dataframe(benchmark_df[[time_col, classe, y_true]+erro_cols+y_benchmark].
-                 style.applymap(colorize_mape, subset=erro_cols)
-    )
+    tbs = st.checkbox('Carregar Tabelas')
+    if tbs:
+        with st.spinner('Um instante...'):
+
+            erro_cols = []
+            
+            for col in y_benchmark:
+                df[f'erro_{col}'] = 100*(df[col] - df[y_true])/df[col]
+                erro_cols.append(f'erro_{col}')
+            
+            #st.write(f'Tabela - {data_group}')
+            st.dataframe(df.loc[df[data_group]!='CG24',[time_col, data_group, classe, y_true]+erro_cols+y_benchmark].
+                        style.applymap(colorize_mape, subset=erro_cols))
+            
+            erro_cols = []
+            
+            for col in y_benchmark:
+                benchmark_df[f'erro_{col}'] = 100*(benchmark_df[col] - benchmark_df[y_true])/benchmark_df[col]
+                erro_cols.append(f'erro_{col}')
+            
+            #st.write(f'Tabela - {classe}')
+            st.dataframe(benchmark_df[[time_col, classe, y_true]+erro_cols+y_benchmark].
+                        style.applymap(colorize_mape, subset=erro_cols)
+            )
     

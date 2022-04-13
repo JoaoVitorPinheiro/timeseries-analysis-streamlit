@@ -91,6 +91,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     
         benchmark_df['residuo'] = benchmark_df[prev] - benchmark_df[y_true]
         benchmark_df['mpe'] = 100*(benchmark_df['residuo']/benchmark_df[prev])
+        benchmark_df['mpe'] = benchmark_df['mpe'].clip(-100,100)
         benchmark_df['mape'] = np.abs(benchmark_df['mpe'])
         benchmark_df['acima5'] = np.where(benchmark_df['mape']>5, 1, 0)
         benchmark_df['acima20'] = np.where(benchmark_df['mape']>20, 1, 0)
@@ -217,6 +218,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
             
             dfplot2['residuo'] = dfplot2[prev] - dfplot2[y_true]
             dfplot2['mpe'] = 100*(dfplot2['residuo']/dfplot2[prev])
+            dfplot2['mpe'] = dfplot2['mpe'].clip(-100,100)
             dfplot2['mape'] = np.abs(dfplot2['mpe'])
             dfplot2['acima5'] = np.where(dfplot2['mape']>5, 1, 0)
             dfplot2['acima20'] = np.where(dfplot2['mape']>20, 1, 0)

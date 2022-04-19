@@ -77,7 +77,8 @@ def preprocess_dataframe(data: pd.DataFrame,
     data[y_predicted] = np.where(data[y_predicted]<0, 0, data[y_predicted])    #Clip para previsões negativas
     data['rmse'] = RMSE(data[y_true],data[y_predicted])
     data['mpe'] = MPE(data[y_true],data[y_predicted])
-    data['mape'] = np.abs(data['mpe']).clip(0, 100)     #Limiar do MAPE para evitar distorções
+    data['mpe'] = data['mpe'].clip(-100, 100) 
+    data['mape'] = np.abs(data['mpe'])   #Limiar do MAPE para evitar distorções
     data['residuo'] = data[y_true] - data[y_predicted]
     data['acima5'] = (data['mape']>5).astype(int)
     data['acima20'] = (data['mape']>20).astype(int)

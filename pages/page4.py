@@ -217,14 +217,15 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
         for num, prev in enumerate(y_benchmark):
             
             dfplot2['residuo'] = dfplot2[prev] - dfplot2[y_true]
-            dfplot2['mpe'] = 100*(dfplot2['residuo']/dfplot2[prev])
-            dfplot2['mpe'] = dfplot2['mpe'].clip(-100,100)
+            dfplot2['mpe'] = MPE(dfplot2[y_true], dfplot2[prev])
+            dfplot2['mpe'] = dfplot2['mpe'].clip(-100, 100)
             dfplot2['mape'] = np.abs(dfplot2['mpe'])
             dfplot2['acima5'] = np.where(dfplot2['mape']>5, 1, 0)
             dfplot2['acima20'] = np.where(dfplot2['mape']>20, 1, 0)
             
             #days_count = dfplot2.shape[0]
-            mape_metrica = dfplot2.mape.clip(0,100).mean()
+            
+            mape_metrica = dfplot2.mape.mean()
             
             acima5_mask = (dfplot2['acima5']==True)
             days_acima5 = dfplot2.loc[acima5_mask].shape[0]

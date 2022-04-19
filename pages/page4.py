@@ -21,7 +21,7 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
     model_names = ['LGBM_PCS', 'Extrap_PCS']
     
     if custom:
-        
+        # ALTERAR ESSA ESTRUTURA DE LISTA
         mixsetup = {
                 'CG01': model_names[0],
                 'CG02': model_names[1],

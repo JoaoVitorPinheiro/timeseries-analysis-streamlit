@@ -4,15 +4,13 @@ import plotly.graph_objects as go
 import pandas as pd
 from typing import List, Any, Dict, Tuple
 from kpi import MAPE, RMSE
-
-def create_page1(df, data_group, y_true, y_predicted):
-    pass  
     
-def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, classes:List, y_true:str, y_predicted:str):
-    
-    #st.markdown(f"""
-    #        <marquee style='width: 100%; color: rgb(234, 82, 111);'><b> <font size="5">{categories}.</b></font></marquee>""",
-    #unsafe_allow_html = True)
+def create_global_metrics(data:pd.DataFrame,
+                          time_col:str,
+                          data_group:str,
+                          classes:List, 
+                          y_true:str,
+                          y_predicted:str):
     
     st.markdown("""
                 <span style="color:rgb(234, 82, 111)"><font size="5">DIAS ACIMA DE 5%</font></span>""",
@@ -111,3 +109,24 @@ def create_global_metrics(data:pd.DataFrame, time_col:str, data_group:str, class
         fig.update_layout(hovermode='x')          
         fig = format_fig(fig, x_title=data_group, y_title='rmse')
         st.plotly_chart(fig, use_container_width=True)
+
+def open_page(data:pd.DataFrame,
+              time_col:str,
+              data_group:str,
+              chosen_group:str,
+              classe: str,
+              y_true:str,
+              y_predicted:str):
+
+    try:
+        st.subheader(f'Métricas:')
+        create_global_metrics(data,
+                            time_col,
+                            data_group,
+                            [classe],
+                            y_true,
+                            y_predicted)   
+    except:
+       st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+       st.stop()
+       

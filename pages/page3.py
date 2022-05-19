@@ -459,36 +459,90 @@ def plot_series(data: pd.DataFrame,
                 hovermode="x unified"
         )
     st.plotly_chart(fig, use_container_width=True)
-    
-def plot_error_distribution(test, predictions, city_gate, bin_limits, bin_size):
-    """Exibe histograma com distribuição dos valores de erro."""
-    err_df = pd.merge(test, predictions, left_index=True, right_index=True, how='inner')
-    
-    # Add histogram data
-    x1 = err_df['volume'] - err_df[1]
-    x2  = err_df['volume'] - err_df[2]
-    x3  = err_df['volume'] - err_df[3]
-    x1 = x1[pd.notna(err_df['volume'] - err_df[1])].values
-    x2 = x2[pd.notna(err_df['volume'] - err_df[2])].values
-    x3 = x3[pd.notna(err_df['volume'] - err_df[3])].values
-    
-    fig = go.Figure()
-    fig.add_trace(go.Histogram(
-        x=x1, name='Erros de 1 dia a frente', xbins=dict(start=bin_limits[0], end=bin_limits[1], size=bin_size)
-    ))
-    
-    fig.add_trace(go.Histogram(
-        x=x2, name='Erros de 2 dias a frente', xbins=dict(start=bin_limits[0], end=bin_limits[1], size=bin_size)
-    ))
-    
-    fig.add_trace(go.Histogram(
-        x=x3, name='Erros de 3 dias a frente', xbins=dict(start=bin_limits[0], end=bin_limits[1], size=bin_size)
-    ))
-    
-    # Overlay both histograms
-    fig.update_layout(barmode='overlay', title=f'Distribuição dos erros na previsão - {city_gate}')
-    
-    # Reduce opacity to see both histograms
-    fig.update_traces(opacity=0.6)
-    
-    return fig
+
+def open_page(dataframe:pd.DataFrame,
+              time_col:str,
+              data_group:str,
+              classe: str,
+              y_true:str,
+              y_predicted:str):
+
+    try:
+        st.session_state['selected'] = st.selectbox(f"Selecione o {data_group}:",
+                    sorted(dataframe[data_group].unique().tolist()))
+
+        df_res = dataframe[dataframe[data_group]==st.session_state['selected']].copy()
+        selected_class = df_res[classe].unique().tolist()[0]
+        selected_class
+        days_count = df_res.shape[0]
+        
+        mape_metrica = df_res.mape.clip(0,100).mean()
+
+        acima5_mask = (df_res['acima5']==True)
+
+        days_acima5 = df_res.loc[acima5_mask].shape[0]
+        perc_acima5 = days_acima5/days_count
+
+        acima20_mask = (df_res['acima20']==True)
+
+        days_acima20 = df_res.loc[acima20_mask].shape[0] 
+        perc_acima20 = days_acima20/days_count
+
+        col1 = st.columns(5)
+        delta1 = np.round(mape_metrica-5,2)
+
+        col1[0].metric(label=data_group,
+        value= str(st.session_state['selected']),
+        delta=f"{selected_class}",
+        delta_color='off')
+
+        col1[1].metric(label="Período",
+        value=f"{days_count} dias")
+
+        col1[2].metric(label="MAPE",
+        value=f"{round(mape_metrica,2)}%",
+        delta=f"{delta1}%",
+        delta_color="inverse")
+
+        col1[3].metric(label="Dias Acima de 5%",
+        value=f"{round(100*perc_acima5,2)}%",
+        delta=f"{days_acima5} dias",
+        delta_color='off')
+
+        col1[4].metric(label="Dias Acima de 20%",
+        value=f"{round(100*perc_acima20,2)}%",
+        delta=f"{days_acima20} dias",
+        delta_color='off')
+
+        plot_series(dataframe,
+                    time_col,
+                    y_true,
+                    y_predicted,
+                    data_group,
+                    st.session_state['selected'])
+        
+    except:
+        st.warning('carregue o arquivo')
+        st.stop()
+
+    with st.expander('Decomposição Clássica'):
+        try:
+            chosen = st.selectbox('',  sorted(dataframe.columns.tolist()))
+            plot_seasonal_decompose(dataframe,data_group,st.session_state['selected'],time_col,col = chosen)
+        except:
+            st.warning('Selecione uma coluna numérica')
+
+    try:   
+        dataframe = standard_residual(dataframe, data_group, y_true, y_predicted)
+    except: 
+        st.warning('não foi possível calcular o resíduo padronizado para esse conjunto de dados')
+
+    try:   
+        st.subheader("Resíduos")
+        check_residuals(dataframe,time_col,st.session_state['selected'],data_group) 
+        check_mape(dataframe,time_col,st.session_state['selected'],data_group) 
+
+    except:
+        st.warning('há um erro na parametrização dos dados, recarregue ou ajuste na *Aba de Navegação*')
+        check_holidays(dataframe,time_col,data_group)
+        

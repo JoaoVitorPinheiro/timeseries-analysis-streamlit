@@ -5,7 +5,12 @@ from typing import List, Any, Dict, Tuple
 from kpi import *
 from dashboard import *
 
-def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark):
+def create_benchmark_view(df:pd.DataFrame,
+                          time_col:str,
+                          data_group:str,
+                          classe:str,
+                          y_true:str,
+                          y_benchmark:str):
           
     all_items = sorted(df[data_group].unique().tolist())
     
@@ -340,3 +345,17 @@ def create_benchmark_view(df, time_col, data_group, classe, y_true, y_benchmark)
                         style.applymap(colorize_mape, subset=erro_cols)
             )
     
+def open_page(data:pd.DataFrame,
+              time_col:str,
+              data_group:str,
+              classe:str,
+              y_true:str,
+              y_benchmark:str):
+    
+    try:
+        st.subheader(f'Comparação dos agrupamentos')
+        create_benchmark_view(data, time_col, data_group, classe,y_true, y_benchmark)
+    except:
+        st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+        st.stop()
+        

@@ -1,10 +1,8 @@
 import plotly.graph_objects as go
 from utils import preprocess_dataframe
 from typing import List, Any, Dict, Tuple
+import pandas as pd
 from dashboard import *
-
-def create_page2(df, data_group, time_col, y_true, y_predicted):
-    pass
 
 def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_predicted:str):
     categories = sorted(data[data_group].unique().tolist())[:-1]
@@ -16,9 +14,7 @@ def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_
             default = categories)
 
     chosen_metric=st.selectbox('Métrica', ['MAPE', 'ACIMA5'])
-    #st.markdown("""
-    #        <span style="color:rgb(32,4,114)"> <font size="5">MAPE</font></span>""",
-    #unsafe_allow_html = True)
+
     fig = go.Figure()
     for group in groups:
         
@@ -48,3 +44,22 @@ def create_grouped_radar(data, data_group, data_group2, time_col, y_true:str, y_
     height=750, width=750,
     )
     st.plotly_chart(fig, use_container_width=True)
+
+def open_page(grouped_data:pd.DataFrame,
+              time_col:str,
+              data_group:str,
+              data_group2:str,
+              y_true:str,
+              y_predicted:str):
+    
+    try:
+        st.subheader(f'Comparação dos agrupamentos')
+        create_grouped_radar(grouped_data,
+                            data_group,
+                            data_group2,
+                            time_col,
+                            y_true,
+                            y_predicted) 
+    except:
+        st.warning('Carregue o arquivo em ''Leitura de Arquivos'' na aba lateral')
+        st.stop()

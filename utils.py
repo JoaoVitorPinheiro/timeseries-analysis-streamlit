@@ -1,8 +1,9 @@
 import streamlit as st
 from google.oauth2 import service_account
 from gsheetsdb.db import Connection
+import pytz
 import os
-
+import datetime
 from kpi import *
 
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril",
@@ -181,10 +182,17 @@ def filter_by_period(dataframe:pd.DataFrame,
     
     try:
         st.subheader('Intervalo:')
+        
+        # adicionar tz awareness ao date slider
+        tz = pytz.timezone('America/Sao_Paulo')
+        
+        min_date = dataframe[time_col].min()
+        max_date = dataframe[time_col].max()
+        
         start_date, end_date = st.slider('',
-                            value=[dataframe[time_col].min(), dataframe[time_col].max()],
-                            max_value = dataframe[time_col].max(),
-                            min_value = dataframe[time_col].min(),
+                            value=[min_date,max_date],
+                            max_value = min_date,
+                            min_value = max_date,
                             key='first')
         
         if start_date <= end_date:
@@ -205,7 +213,6 @@ def filter_by_period(dataframe:pd.DataFrame,
     except:
         updated_df = dataframe.copy()
         st.warning('Falha na data')
-        
         st.stop()
         
     finally:
